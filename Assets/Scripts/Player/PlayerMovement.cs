@@ -19,41 +19,81 @@ public class PlayerMovement : MonoBehaviour
     private float velocity;
     public LayerMask Ground;
 
+    private bool canJump = true;
+    public bool DidJumpThisFrame { get; private set; }
+
     private void Start()
     {
-        //Initialize character controller
         controller = GetComponent<CharacterController>();
+        EnsureFootGroundCheck();
     }
+
+    /// <summary>
+    /// Scene had groundCheck wired to the Ground platform — that made isGrounded always true.
+    /// </summary>
+    private void EnsureFootGroundCheck()
+    {
+        if (groundCheck != null && groundCheck.IsChildOf(transform))
+            return;
+
+        var existing = transform.Find("GroundCheck");
+        if (existing != null)
+        {
+            groundCheck = existing;
+            return;
+        }
+
+        var feet = new GameObject("GroundCheck");
+        feet.transform.SetParent(transform, false);
+        float footY = controller != null
+            ? controller.center.y - controller.height * 0.5f + 0.05f
+            : -0.95f;
+        feet.transform.localPosition = new Vector3(0f, footY, 0f);
+        groundCheck = feet.transform;
+    }
+
+    private void UpdateGrounded()
+    {
+        isGrounded = controller.isGrounded;
+
+        if (groundCheck != null && groundCheck.IsChildOf(transform))
+        {
+            isGrounded |= Physics.CheckSphere(
+                groundCheck.position,
+                groundDistance,
+                groundMask,
+                QueryTriggerInteraction.Ignore);
+        }
+    }
+
     void Update()
     {
-        //Lock the cursor to the center of the screen
-        Cursor.lockState = CursorLockMode.Locked;
+        DidJumpThisFrame = false;
 
-        //Check if player is grounded
+        if (GameManager.GameStarted)
+            UICursor.LockForGameplay();
 
         groundMask = Ground;
-        isGrounded = controller.isGrounded;
-        if (isGrounded && velocity < 0)
+        UpdateGrounded();
+
+        if (controller.isGrounded && velocity < 0f)
         {
             velocity = -2f;
+            canJump = true;
         }
-        //Debug.Log(controller.isGrounded);
-        //Initialize horixontal movement
-        float horizontal = Input.GetAxis("Horizontal");
 
-        //Create movement vector
+        float horizontal = Input.GetAxis("Horizontal");
         Vector3 move = new Vector3(horizontal * sidewaySpeed, 0, forwardSpeed);
-        
-        //Jump
-        if (Input.GetButtonDown("Jump") && isGrounded)
+
+        if (Input.GetButtonDown("Jump") && canJump && isGrounded)
         {
             velocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            canJump = false;
+            DidJumpThisFrame = true;
         }
-        //Apply Gravity
+
         velocity += gravity * Time.deltaTime;
-        //Initialize gravity to movement
         move.y = velocity;
-        //Move the player
         controller.Move(move * Time.deltaTime);
     }
 }

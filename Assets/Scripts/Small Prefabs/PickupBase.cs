@@ -11,9 +11,11 @@ public class PickupBase : MonoBehaviour
     private int healthDecreaseAmount = 10;
     public int currentHealth;
     public int maxHealth = 100;
+    public const int ArtifactsToWin = 2;
+
     public int artifactAmount;
     public bool isSneaking = false;
-    public int hitCounter = 3;
+    public int hitCounter = 10;
 
     //Time variable for boost
     private float timer;
@@ -84,9 +86,17 @@ public class PickupBase : MonoBehaviour
         }
         if (other.CompareTag("HealthDEC"))
         {
-            Debug.Log("Player hit a health pickup and is damaged!");
-            HealthDecrease();
+            Debug.Log("Player hit a dangerous obstacle!");
+            if (other.GetComponent<HealthDecreaseObstacle>() != null)
+                ApplyObstacleDamage(other.GetComponent<HealthDecreaseObstacle>());
+            else
+                HealthDecrease();
             Destroy(other.gameObject);
+        }
+        if (other.GetComponentInParent<EnemyBase>() != null)
+        {
+            if (!isSneaking)
+                KillPlayer();
         }
         if (other.CompareTag("Artifact"))
         {
@@ -130,34 +140,48 @@ public class PickupBase : MonoBehaviour
     }
     public void HealthDecrease()
     {
-        //Check if the player's health is already at 0
-        if (currentHealth <= 0f)
-        {
-            Debug.Log("Player has died!");
-            //Load the death scene
-            Death();
-            //Restart the level
-            SceneManager.LoadScene("MainGameL1");
-        }
+        currentHealth -= healthDecreaseAmount;
+        if (currentHealth <= 0)
+            KillPlayer();
+    }
+
+    public void ApplyObstacleDamage(HealthDecreaseObstacle obstacle)
+    {
+        if (obstacle == null) return;
+        if (obstacle.instantKill)
+            KillPlayer();
         else
         {
-            //Decrease the players health
-            currentHealth -= healthDecreaseAmount;
+            currentHealth = Mathf.Max(0, currentHealth - obstacle.damage);
+            if (currentHealth <= 0)
+                KillPlayer();
         }
+    }
+
+    /// <summary>Instant game over — defeat animation then DeathScene.</summary>
+    public void KillPlayer()
+    {
+        if (currentHealth <= 0 && hitCounter <= 0) return;
+        currentHealth = 0;
+        hitCounter = 0;
+        Death();
     }
     void Artifact()
     {
-        if (artifactAmount >= 10 && currentHealth >= 1)
-        {
-            Debug.Log("Player has collected all artifacts and wins!");
-            //Load victory scene
-            Victory();
-        }
-        else
-        {
-            //Increase artifact amount
-            artifactAmount += 1;
-        }
+        artifactAmount += 1;
+        Debug.Log($"Artifact collected! Total: {artifactAmount}");
+        TryTriggerVictory();
+    }
+
+    /// <summary>Returns true and loads victory if the player has collected enough artifacts.</summary>
+    public bool TryTriggerVictory()
+    {
+        if (artifactAmount < ArtifactsToWin || currentHealth < 1)
+            return false;
+
+        Debug.Log($"Player collected {artifactAmount} artifacts — victory!");
+        Victory();
+        return true;
     }
     void JumpBoost()
     {
@@ -193,11 +217,18 @@ public class PickupBase : MonoBehaviour
     public void Victory()
     {
         Debug.Log("Victory, player won!");
-        //UnityEngine.SceneManagement.SceneManager.LoadScene("VictoryScene");
+        // Use GameManager so the victory sequence (fade, etc.) runs cleanly
+        if (GameManager.Instance != null)
+            GameManager.Instance.TriggerVictory();
+        else
+            SceneFader.LoadScene("VictoryScene");
     }
     public void Death()
     {
         Debug.Log("Defeat, player lost!");
-        //UnityEngine.SceneManagement.SceneManager.LoadScene("DeathScene");
+        if (GameManager.Instance != null)
+            GameManager.Instance.TriggerGameOver();
+        else
+            SceneFader.LoadScene("DeathScene");
     }
 }

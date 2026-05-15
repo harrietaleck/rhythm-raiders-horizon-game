@@ -4,8 +4,8 @@ public class EnemyBase : MonoBehaviour
 {
     //Declare variables
     public Transform player;
-    private float speed = 15f;
-    private float boostedSpeed = 40f;
+    private float speed = 10f;
+    private float boostedSpeed = 34f;
     private float speedBoostTime = 10f;
     public float boostDuration = 10f;
     public float timer;
@@ -13,6 +13,8 @@ public class EnemyBase : MonoBehaviour
     private PlayerMovement playerMovement;
     public float followDistance = 1f;
     private bool hasBoosted = false;
+    private bool _caughtPlayer = false;
+    private Collider _catchCollider;
 
     void Start()
     {
@@ -36,6 +38,12 @@ public class EnemyBase : MonoBehaviour
         {
             Debug.LogError("Player not found!");
         }
+
+        _catchCollider = GetComponent<Collider>();
+        if (_catchCollider == null)
+            _catchCollider = GetComponentInChildren<Collider>();
+        if (_catchCollider != null)
+            _catchCollider.isTrigger = true;
     }
 
     void Update()
@@ -46,7 +54,7 @@ public class EnemyBase : MonoBehaviour
         if (pickupBase != null && playerMovement != null)
         {
             //Check if the timer reached the boost time and if the boost has not been applied yet
-            if (pickupBase.isSneaking || playerMovement.forwardSpeed == 20f || pickupBase.artifactAmount == 10f)
+            if (pickupBase.isSneaking || playerMovement.forwardSpeed == 20f || pickupBase.artifactAmount >= PickupBase.ArtifactsToWin)
             {
                 if (timer >= speedBoostTime && !hasBoosted)
                 {
@@ -76,29 +84,25 @@ public class EnemyBase : MonoBehaviour
         transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!other.CompareTag("Player")) return;
+        CatchPlayer();
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            if (pickupBase.hitCounter <= 0)
-            {
-                Debug.Log("Player has been hit 3 times and is now dead!");
-                //Reset the counter
-                pickupBase.hitCounter = 0;
-                pickupBase.Death();
-            }
-            else
-            {
-                Debug.Log("Security hit the player! Hit count: " + (pickupBase.hitCounter + 1));
-                //Decrease counter
-                pickupBase.hitCounter -= 1;
-                
-                //Decrease the player's health by 20
-                pickupBase.currentHealth -= 20;
-                //Go to normal speed after hitting the player
-                timer = 10f;
-                hasBoosted = true;
-            }
-        }
+        if (!collision.gameObject.CompareTag("Player")) return;
+        CatchPlayer();
+    }
+
+    private void CatchPlayer()
+    {
+        if (_caughtPlayer || pickupBase == null) return;
+        if (pickupBase.isSneaking) return;
+
+        _caughtPlayer = true;
+        Debug.Log("Security caught the player!");
+        pickupBase.KillPlayer();
     }
 }
