@@ -66,6 +66,7 @@ public class AudioManager : MonoBehaviour
         // Singleton — persist across scenes so music doesn't cut out
         if (Instance != null && Instance != this)
         {
+            Instance.AbsorbClipReferencesFrom(this);
             Destroy(gameObject);
             return;
         }
@@ -81,6 +82,7 @@ public class AudioManager : MonoBehaviour
         _musicSource.loop        = true;
         _musicSource.volume      = musicVolume;
         _musicSource.playOnAwake = false;
+        _musicSource.Stop();
 
         _musicLayerSource.loop        = true;
         _musicLayerSource.volume      = musicVolume * 0.35f;
@@ -124,9 +126,7 @@ public class AudioManager : MonoBehaviour
     // ── Auto-play logic per scene ─────────────────────────────────────────────
     private void AutoPlayForScene(string sceneName)
     {
-        _musicSource.Stop();
-        if (_musicLayerSource != null)
-            _musicLayerSource.Stop();
+        StopAllLoopingMusic();
         _narrativeSource.Stop();
 
         switch (sceneName)
@@ -178,6 +178,9 @@ public class AudioManager : MonoBehaviour
     public void PlayBackground(AudioClip clip, bool useMusicLayer)
     {
         if (clip == null) return;
+
+        StopAllLoopingMusic();
+
         _musicSource.clip   = clip;
         _musicSource.volume = musicVolume;
         _musicSource.loop   = true;
@@ -185,7 +188,7 @@ public class AudioManager : MonoBehaviour
 
         if (_musicLayerSource == null) return;
 
-        if (useMusicLayer)
+        if (useMusicLayer && clip == backgroundMusic)
         {
             var layerClip = backgroundMusicLayer != null ? backgroundMusicLayer : clip;
             _musicLayerSource.clip   = layerClip;
@@ -195,7 +198,62 @@ public class AudioManager : MonoBehaviour
         }
         else
         {
-            _musicLayerSource.Stop();
+            StopMusicLayer();
+        }
+    }
+
+    void AbsorbClipReferencesFrom(AudioManager other)
+    {
+        if (other == null) return;
+        if (other.level2Music != null) level2Music = other.level2Music;
+        if (other.level3Music != null) level3Music = other.level3Music;
+        if (other.backgroundMusic != null) backgroundMusic = other.backgroundMusic;
+        if (other.backgroundMusicLayer != null) backgroundMusicLayer = other.backgroundMusicLayer;
+    }
+
+    void StopMusicLayer()
+    {
+        if (_musicLayerSource == null) return;
+        _musicLayerSource.Stop();
+        _musicLayerSource.clip = null;
+        _musicLayerSource.volume = 0f;
+    }
+
+    void StopAllLoopingMusic()
+    {
+        EnsureMusicSources();
+
+        foreach (var src in GetComponents<AudioSource>())
+        {
+            if (src == _sfxSource || src == _narrativeSource || src == _countdownSource)
+                continue;
+
+            src.Stop();
+            src.clip = null;
+        }
+
+        if (_musicSource != null)
+            _musicSource.volume = musicVolume;
+        StopMusicLayer();
+    }
+
+    void EnsureMusicSources()
+    {
+        if (_musicSource == null)
+            _musicSource = GetComponent<AudioSource>();
+
+        if (_musicLayerSource != null || _musicSource == null)
+            return;
+
+        foreach (var src in GetComponents<AudioSource>())
+        {
+            if (src == _musicSource || src == _sfxSource || src == _narrativeSource || src == _countdownSource)
+                continue;
+
+            _musicLayerSource = src;
+            _musicLayerSource.loop = true;
+            _musicLayerSource.playOnAwake = false;
+            return;
         }
     }
 
@@ -324,16 +382,14 @@ public class AudioManager : MonoBehaviour
 
     public void StopMusic()
     {
-        _musicSource.Stop();
-        if (_musicLayerSource != null)
-            _musicLayerSource.Stop();
+        StopAllLoopingMusic();
     }
 
     public void SetMusicVolume(float v)
     {
         musicVolume = v;
         _musicSource.volume = v;
-        if (_musicLayerSource != null)
+        if (_musicLayerSource != null && _musicLayerSource.isPlaying)
             _musicLayerSource.volume = v * 0.35f;
     }
 

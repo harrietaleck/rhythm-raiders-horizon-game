@@ -96,6 +96,14 @@ public class SetupAudio
         existing.slowDownObstacleSound = AssetDatabase.LoadAssetAtPath<AudioClip>(OBSTACLE_SLOW);
         EditorUtility.SetDirty(existing.gameObject);
 
+        var musicSource = existing.GetComponent<AudioSource>();
+        if (musicSource != null)
+        {
+            musicSource.playOnAwake = false;
+            musicSource.loop = true;
+            EditorUtility.SetDirty(musicSource);
+        }
+
         // ── ButtonSoundPlayer on every Button ─────────────────────────────────
         var allButtons = Object.FindObjectsByType<Button>(FindObjectsSortMode.None);
         foreach (var btn in allButtons)
