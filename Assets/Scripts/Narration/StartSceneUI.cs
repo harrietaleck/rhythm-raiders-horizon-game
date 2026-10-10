@@ -25,6 +25,8 @@ public class StartSceneUI : MonoBehaviour
     public Button level3Button;
     public Button narrativeButton;   // NEW — opens the story narration from the menu
     public Button pauseButton;
+    public Button guideButton;
+    public Button creditsButton;
     public Button settingsButton;
 
     [Header("Overlays")]
@@ -74,6 +76,8 @@ public class StartSceneUI : MonoBehaviour
         WireButton(level3Button,   OnPlayLevel3);
         WireButton(narrativeButton, OnNarrative);
         WireButton(pauseButton,    OnPause);
+        WireButton(guideButton,    OnGuide);
+        WireButton(creditsButton,  OnCredits);
         WireButton(settingsButton, OnSettings);
         WireButton(pauseResumeButton,    OnResume);
         WireButton(settingsCloseButton,  OnCloseSettings);
@@ -122,6 +126,18 @@ public class StartSceneUI : MonoBehaviour
         {
             OnNarrationComplete();
         }
+    }
+
+    public void OnGuide()
+    {
+        GuideSceneUI.OpenCredits = false;
+        SceneFader.LoadScene(GuideSceneUI.SceneName);
+    }
+
+    public void OnCredits()
+    {
+        GuideSceneUI.OpenCredits = true;
+        SceneFader.LoadScene(GuideSceneUI.SceneName);
     }
 
     public void OnPlay()

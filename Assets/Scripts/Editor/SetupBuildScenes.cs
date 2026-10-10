@@ -29,6 +29,7 @@ public class SetupBuildScenes
         "Assets/Scenes/Level3UndergroundDance.unity",
         "Assets/Scenes/DeathScene.unity",
         "Assets/Scenes/VictoryScene.unity",
+        "Assets/Scenes/GuideScene.unity",
     };
 
     [MenuItem("Tools/Setup Build Scenes")]
