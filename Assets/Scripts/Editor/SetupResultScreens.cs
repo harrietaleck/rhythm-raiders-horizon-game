@@ -37,6 +37,8 @@ public static class SetupResultScreens
 
         var bg = ApplyBackground(canvas.transform);
         var box = EnsureBox(canvas.transform, bg, new Vector2(0.32f, 0.08f), new Vector2(0.68f, 0.56f));
+        SciFiUiKit.StyleWindow(box.GetComponent<Image>());
+        box.GetComponent<Image>().raycastTarget = false;
         EnsureHeading(box, "VICTORY");
 
         foreach (Transform child in canvas.transform)
@@ -175,12 +177,10 @@ public static class SetupResultScreens
 
         var tmp = go.GetComponent<TextMeshProUGUI>();
         tmp.text = text;
-        tmp.fontSize = 48;
-        tmp.characterSpacing = 10;
-        tmp.color = Accent;
+        SciFiUiKit.StyleText(tmp, 56, SciFiUiKit.TextMain);
+        tmp.characterSpacing = 16;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.raycastTarget = false;
-        ApplyFont(tmp);
     }
 
     private static void PlaceButton(Transform tr, Vector2 min, Vector2 max)
@@ -193,28 +193,8 @@ public static class SetupResultScreens
 
     private static void StyleButton(Button btn)
     {
-        var img = btn.GetComponent<Image>();
-        if (img != null)
-        {
-            img.color = Color.white;
-            btn.targetGraphic = img;
-        }
-
-        var colors = btn.colors;
-        colors.normalColor      = ButtonNormal;
-        colors.highlightedColor = ButtonHover;
-        colors.pressedColor     = ButtonPressed;
-        colors.selectedColor    = ButtonNormal;
-        btn.colors = colors;
-
-        var label = btn.GetComponentInChildren<TextMeshProUGUI>(true);
-        if (label != null)
-        {
-            label.color = Color.white;
-            label.fontStyle = FontStyles.Normal;
-            label.characterSpacing = 8;
-            ApplyFont(label);
-        }
+        SciFiUiKit.StyleButton(btn, btn.GetComponentInChildren<TextMeshProUGUI>(true), 28);
+        btn.GetComponent<Image>().pixelsPerUnitMultiplier = 6f;
 
         var legacy = btn.GetComponentInChildren<Text>(true);
         if (legacy != null)

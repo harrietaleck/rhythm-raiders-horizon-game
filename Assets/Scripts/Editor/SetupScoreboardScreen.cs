@@ -76,12 +76,15 @@ public class SetupScoreboardScreen
         img.color = Color.white;
         img.raycastTarget = true;
         img.preserveAspect = false;
-        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(ScoreboardBgPath);
-        if (sprite != null)
-        {
-            img.sprite = sprite;
-            img.type = Image.Type.Simple;
-        }
+        SciFiUiKit.StyleBackground(img);
+
+        var winTr = panel.transform.Find("ScoreWindow");
+        var win = winTr != null ? winTr.gameObject : new GameObject("ScoreWindow", typeof(RectTransform), typeof(Image));
+        win.transform.SetParent(panel.transform, false);
+        win.transform.SetAsFirstSibling();
+        SetAnchors(win, new Vector2(0.28f, 0.05f), new Vector2(0.72f, 0.75f));
+        SciFiUiKit.StyleWindow(win.GetComponent<Image>());
+        win.GetComponent<Image>().raycastTarget = false;
 
         return panel;
     }
@@ -106,12 +109,11 @@ public class SetupScoreboardScreen
         tmp.text = RunStats.FormatScoreSummary();
         tmp.fontSize = 34;
         tmp.fontStyle = FontStyles.Bold;
-        tmp.color = new Color(0.15f, 0.12f, 0.10f, 1f);
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.verticalAlignment = VerticalAlignmentOptions.Middle;
         tmp.textWrappingMode = TextWrappingModes.Normal;
         tmp.raycastTarget = false;
-        ApplyFont(tmp);
+        SciFiUiKit.StyleText(tmp, 34, SciFiUiKit.TextMain);
         return tmp;
     }
 
@@ -136,29 +138,12 @@ public class SetupScoreboardScreen
 
         SetAnchors(go, BackButtonMin, BackButtonMax);
 
-        var img = go.GetComponent<Image>();
-        img.color = ButtonFill;
-        img.raycastTarget = true;
-
         var btn = go.GetComponent<Button>();
-        btn.targetGraphic = img;
-        var colors = btn.colors;
-        colors.normalColor      = ButtonFill;
-        colors.highlightedColor = ButtonHighlight;
-        colors.pressedColor     = ButtonPressed;
-        colors.selectedColor    = ButtonFill;
-        btn.colors = colors;
-
         var label = go.GetComponentInChildren<TextMeshProUGUI>();
+        SciFiUiKit.StyleButton(btn, label, 28);
         if (label != null)
         {
             label.text = "BACK";
-            label.fontSize = 28;
-            label.fontStyle = FontStyles.Bold;
-            label.color = ButtonLabel;
-            label.alignment = TextAlignmentOptions.Center;
-            label.raycastTarget = false;
-            ApplyFont(label);
 
             var lrt = label.GetComponent<RectTransform>();
             lrt.anchorMin = Vector2.zero;

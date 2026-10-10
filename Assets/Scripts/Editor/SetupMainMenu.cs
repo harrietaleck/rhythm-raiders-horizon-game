@@ -13,18 +13,22 @@ public class SetupMainMenu
     public const string MenuBgPath = "Assets/UI/Splash/title_horizon.jpg";
 
     // Stacked under the baked-in title of the sunset art.
-    private static readonly Vector2 PlayMin      = new Vector2(0.35f, 0.462f);
+    private static readonly Vector2 PlayMin      = new Vector2(0.35f, 0.474f);
     private static readonly Vector2 PlayMax      = new Vector2(0.65f, 0.530f);
-    private static readonly Vector2 Level2Min    = new Vector2(0.35f, 0.387f);
-    private static readonly Vector2 Level2Max    = new Vector2(0.65f, 0.455f);
-    private static readonly Vector2 Level3Min    = new Vector2(0.35f, 0.312f);
-    private static readonly Vector2 Level3Max    = new Vector2(0.65f, 0.380f);
-    private static readonly Vector2 PauseMin     = new Vector2(0.35f, 0.237f);
-    private static readonly Vector2 PauseMax     = new Vector2(0.65f, 0.305f);
-    private static readonly Vector2 NarrativeMin = new Vector2(0.35f, 0.162f);
-    private static readonly Vector2 NarrativeMax = new Vector2(0.65f, 0.230f);
-    private static readonly Vector2 SettingsMin  = new Vector2(0.35f, 0.087f);
-    private static readonly Vector2 SettingsMax  = new Vector2(0.65f, 0.155f);
+    private static readonly Vector2 Level2Min    = new Vector2(0.35f, 0.415f);
+    private static readonly Vector2 Level2Max    = new Vector2(0.65f, 0.471f);
+    private static readonly Vector2 Level3Min    = new Vector2(0.35f, 0.356f);
+    private static readonly Vector2 Level3Max    = new Vector2(0.65f, 0.412f);
+    private static readonly Vector2 PauseMin     = new Vector2(0.35f, 0.297f);
+    private static readonly Vector2 PauseMax     = new Vector2(0.65f, 0.353f);
+    private static readonly Vector2 NarrativeMin = new Vector2(0.35f, 0.238f);
+    private static readonly Vector2 NarrativeMax = new Vector2(0.65f, 0.294f);
+    private static readonly Vector2 GuideMin     = new Vector2(0.35f, 0.179f);
+    private static readonly Vector2 GuideMax     = new Vector2(0.65f, 0.235f);
+    private static readonly Vector2 CreditsMin   = new Vector2(0.35f, 0.120f);
+    private static readonly Vector2 CreditsMax   = new Vector2(0.65f, 0.176f);
+    private static readonly Vector2 SettingsMin  = new Vector2(0.35f, 0.061f);
+    private static readonly Vector2 SettingsMax  = new Vector2(0.65f, 0.117f);
 
     private static readonly Color ButtonNormal  = new Color(0.06f, 0.05f, 0.12f, 1f);
     private static readonly Color ButtonHover   = new Color(1f, 0.48f, 0.22f, 0.95f);
@@ -56,6 +60,8 @@ public class SetupMainMenu
         var level3Btn    = EnsureMenuButton(menuPanel, "PlayLevel3Button", "LEVEL 3",   Level3Min, Level3Max);
         var pauseBtn     = EnsureMenuButton(menuPanel, "PauseButton",      "PAUSE",     PauseMin, PauseMax);
         var narrativeBtn = EnsureMenuButton(menuPanel, "NarrativeButton",  "NARRATIVE", NarrativeMin, NarrativeMax);
+        var guideBtn     = EnsureMenuButton(menuPanel, "GuideButton",      "GUIDE",     GuideMin, GuideMax);
+        var creditsBtn   = EnsureMenuButton(menuPanel, "CreditsButton",    "CREDITS",   CreditsMin, CreditsMax);
         var settingsBtn  = EnsureMenuButton(menuPanel, "SettingsButton",   "SETTINGS",  SettingsMin, SettingsMax);
         RemoveMenuSubtitle(menuPanel);
 
@@ -73,6 +79,8 @@ public class SetupMainMenu
         ui.level3Button         = level3Btn;
         ui.pauseButton          = pauseBtn;
         ui.narrativeButton      = narrativeBtn;
+        ui.guideButton          = guideBtn;
+        ui.creditsButton        = creditsBtn;
         ui.settingsButton       = settingsBtn;
         ui.pausePanel           = pausePanel;
         ui.settingsPanel        = settingsPanel;
@@ -166,17 +174,8 @@ public class SetupMainMenu
         go.transform.SetParent(parent.transform, false);
         SetAnchors(go, min, max);
 
-        var img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
-        img.color = Color.white;
-        img.raycastTarget = true;
-
+        if (go.GetComponent<Image>() == null) go.AddComponent<Image>();
         var btn = go.GetComponent<Button>() ?? go.AddComponent<Button>();
-        var colors = btn.colors;
-        colors.normalColor      = ButtonNormal;
-        colors.highlightedColor = ButtonHover;
-        colors.selectedColor    = ButtonNormal;
-        colors.pressedColor     = ButtonPressed;
-        btn.colors = colors;
 
         var labelGo = go.transform.Find("Label")?.gameObject;
         if (labelGo == null)
@@ -200,7 +199,8 @@ public class SetupMainMenu
         tmp.outlineWidth = 0f;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.raycastTarget = false;
-        ApplyFont(tmp);
+        SciFiUiKit.StyleButton(btn, tmp, 28);
+        btn.GetComponent<Image>().pixelsPerUnitMultiplier = 8f;
 
         return btn;
     }
@@ -280,7 +280,7 @@ public class SetupMainMenu
 
         var box = EnsurePanel(panel, "SettingsBox", new Vector2(0.25f, 0.28f), new Vector2(0.75f, 0.72f));
         var boxImg = box.GetComponent<Image>() ?? box.AddComponent<Image>();
-        boxImg.color = new Color(0.06f, 0.05f, 0.12f, 0.92f);
+        SciFiUiKit.StyleWindow(boxImg);
 
         var titleTmp = EnsureLabel(box, "Title", "SETTINGS", new Vector2(0.05f, 0.82f), new Vector2(0.95f, 0.96f), 48);
 
@@ -289,6 +289,8 @@ public class SetupMainMenu
 
         EnsureLabel(box, "SfxLabel", "SFX Volume", new Vector2(0.08f, 0.36f), new Vector2(0.92f, 0.48f), 32);
         sfxSlider = EnsureSlider(box, "SfxSlider", new Vector2(0.08f, 0.26f), new Vector2(0.92f, 0.36f));
+        if (musicSlider != null) SciFiUiKit.StyleSlider(musicSlider);
+        if (sfxSlider != null) SciFiUiKit.StyleSlider(sfxSlider);
 
         closeBtn = EnsureMenuButton(box, "CloseButton", "CLOSE",
                                     new Vector2(0.25f, 0.06f), new Vector2(0.75f, 0.18f));
