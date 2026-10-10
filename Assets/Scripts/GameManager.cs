@@ -12,6 +12,7 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
     public static bool GameStarted { get; private set; } = false;
+    public static bool EndlessRun;
     public static bool IsGameOver { get; private set; }
 
     // ── Scene names ───────────────────────────────────────────────────────────
@@ -88,6 +89,7 @@ public class GameManager : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         GameStarted = false;
+        EndlessRun = false;
         IsGameOver = false;
         _gameOverTriggered = false;
         _victoryTriggered = false;

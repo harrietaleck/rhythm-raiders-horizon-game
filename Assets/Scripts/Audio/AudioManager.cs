@@ -136,7 +136,7 @@ public class AudioManager : MonoBehaviour
                 break;
 
             case "MainGameL1Opera":
-                PlayBackground(GetClipForScene(sceneName), useMusicLayer: true);
+                // Rooftop soundtrack not delivered yet — level runs silent.
                 break;
 
             case "Level2Museum":

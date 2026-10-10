@@ -26,6 +26,9 @@ public static class LevelCutscenePlayer
             case LevelCutsceneType.OperaCurtain:
                 yield return PlayOperaCurtain(root);
                 break;
+            case LevelCutsceneType.RooftopDoor:
+                yield return PlayRooftopDoor(root);
+                break;
             case LevelCutsceneType.MuseumSecurityDoor:
                 yield return PlayMuseumSecurityDoor(root);
                 break;
@@ -87,6 +90,48 @@ public static class LevelCutscenePlayer
         yield return AnimateAnchors(leftRt,  new Vector2(0f,   0f), new Vector2(-0.52f, 0f), 0.8f);
         yield return AnimateAnchors(rightRt, new Vector2(0.5f, 0f), new Vector2(1.02f,  0f), 0.8f);
         yield return FadeOut(root, 0.4f);
+    }
+
+    static IEnumerator PlayRooftopDoor(GameObject root)
+    {
+        var glow = CreatePanel(root.transform, "SunsetGlow", Vector2.zero, Vector2.one,
+            new Color(1f, 0.55f, 0.28f, 1f));
+        glow.transform.SetAsLastSibling();
+
+        var left  = CreateSteelDoor(root.transform, "DoorLeft",  handleOnRight: true);
+        var right = CreateSteelDoor(root.transform, "DoorRight", handleOnRight: false);
+        var leftRt  = left.GetComponent<RectTransform>();
+        var rightRt = right.GetComponent<RectTransform>();
+        leftRt.anchorMin  = new Vector2(0f, 0f);   leftRt.anchorMax  = new Vector2(0.5f, 1f);
+        rightRt.anchorMin = new Vector2(0.5f, 0f); rightRt.anchorMax = new Vector2(1f, 1f);
+
+        var title = CreateTitleCard(root.transform, "LEVEL 1", "ROOFTOP");
+        yield return FadeInGraphic(title.GetComponentsInChildren<Graphic>(), 0.35f);
+        yield return new WaitForSecondsRealtime(1.1f);
+        yield return FadeOutGraphics(title.GetComponentsInChildren<Graphic>(), 0.25f);
+
+        yield return AnimateAnchors(leftRt,  new Vector2(0f, 0f),   new Vector2(-0.5f, 0f), 0.8f);
+        yield return AnimateAnchors(rightRt, new Vector2(0.5f, 0f), new Vector2(1f, 0f),    0.8f);
+        yield return FadeOut(root, 0.4f);
+    }
+
+    static GameObject CreateSteelDoor(Transform parent, string name, bool handleOnRight)
+    {
+        var door = CreatePanel(parent, name, Vector2.zero, Vector2.one, new Color(0.42f, 0.44f, 0.47f, 1f));
+
+        CreatePanel(door.transform, "Edge", new Vector2(0f, 0f), new Vector2(1f, 1f),
+            new Color(0.28f, 0.29f, 0.31f, 1f));
+        CreatePanel(door.transform, "Face", new Vector2(0.03f, 0.02f), new Vector2(0.97f, 0.98f),
+            new Color(0.5f, 0.52f, 0.55f, 1f));
+        CreatePanel(door.transform, "PanelTop", new Vector2(0.12f, 0.56f), new Vector2(0.88f, 0.9f),
+            new Color(0.45f, 0.47f, 0.5f, 1f));
+        CreatePanel(door.transform, "PanelBottom", new Vector2(0.12f, 0.1f), new Vector2(0.88f, 0.44f),
+            new Color(0.45f, 0.47f, 0.5f, 1f));
+
+        float hx = handleOnRight ? 0.84f : 0.08f;
+        CreatePanel(door.transform, "Handle", new Vector2(hx, 0.46f), new Vector2(hx + 0.08f, 0.54f),
+            new Color(0.2f, 0.21f, 0.22f, 1f));
+        return door;
     }
 
     // Creates a curtain panel using RawImage so the Texture2D can be applied directly.

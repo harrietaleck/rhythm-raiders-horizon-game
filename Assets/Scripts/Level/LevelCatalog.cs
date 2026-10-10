@@ -50,16 +50,16 @@ public static class LevelCatalog
     static readonly LevelDefinition Level1 = new LevelDefinition
     {
         levelNumber      = 1,
-        displayName      = "Opera House",
-        codename         = "The Red Curtain Run",
+        displayName      = "Rooftop",
+        codename         = "Horizon Run",
         gameplayScene    = "MainGameL1Opera",
         nextIntroScene   = "Level2IntroScene",
-        briefingTitle    = "Opera House — Level 1",
-        gameplayCutscene = LevelCutsceneType.OperaCurtain,
+        briefingTitle    = "Rooftop — Level 1",
+        gameplayCutscene = LevelCutsceneType.RooftopDoor,
         introCutscene    = LevelCutsceneType.None,
-        briefingLine1    = "The Conductors hid a legendary instrument behind the red curtains.",
-        briefingLine2    = "Infiltrate the opera hall. Collect two artifacts and escape the guard.",
-        startHint1       = "Pulse, the artifact is on this stage. Move with the music!",
+        briefingLine1    = "The Conductors stashed a legendary instrument up on the city rooftops.",
+        briefingLine2    = "Break out onto the roofs. Collect two artifacts and escape the guard.",
+        startHint1       = "Pulse, the artifact is up here somewhere. Keep moving!",
         startHint2       = "Collect two instruments. The guard is already hunting you.",
         forwardSpeed     = 8.0f,     // Comfortable pace — feels like running, not jogging
         guardSpeed       = 6.5f,     // Behind player at baseline; surges create danger

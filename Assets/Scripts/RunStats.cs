@@ -13,7 +13,8 @@ public static class RunStats
 {
     public static int        ArtifactsCollected { get; private set; }
     public static int        ArtifactMoney      { get; private set; }
-    public static float      RunTime            { get; private set; }  // seconds
+    public static float      Distance           { get; private set; }
+    public static float      RunTime            { get; private set; }
     public static DeathCause LastDeathCause     { get; private set; } = DeathCause.Unknown;
 
     private static float _runStartTime = -1f;
@@ -35,7 +36,10 @@ public static class RunStats
         RunTime = _runStartTime >= 0f
             ? UnityEngine.Mathf.Max(0f, UnityEngine.Time.time - _runStartTime)
             : 0f;
-        _runStartTime = -1f;   // reset so replays start fresh
+        _runStartTime = -1f;
+
+        var player = UnityEngine.GameObject.FindGameObjectWithTag("Player");
+        Distance = player != null ? UnityEngine.Mathf.Max(0f, player.transform.position.z) : 0f;
 
         if (pickup == null)
         {
@@ -107,6 +111,6 @@ public static class RunStats
     public static string FormatRunSummaryLine()
     {
         string time = RunTime > 0f ? $"   |   {FormatTime(RunTime)}" : "";
-        return $"Artifacts: {ArtifactsCollected} / {PickupBase.ArtifactsToWin}   |   ${ArtifactMoney:N0}{time}";
+        return $"Distance: {Distance:0}m   |   Fragments: {ArtifactsCollected}   |   ${ArtifactMoney:N0}{time}";
     }
 }

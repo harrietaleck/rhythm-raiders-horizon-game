@@ -88,11 +88,11 @@ public static class ScriptedDialogueBank
     // These are checked first for LevelStart so each venue gets a unique hint.
     static readonly Dictionary<string, string[]> LevelStartByVenue = new()
     {
-        ["Opera House"] = new[]
+        ["Rooftop"] = new[]
         {
-            "Two artifacts hidden behind the red curtains. Move with the music, Pulse!",
-            "The stage is yours. Grab both instruments before the guard cuts you off!",
-            "Opera House. Low guard count, big curtains. Learn the rhythm — now go!",
+            "Two artifacts hidden across the rooftops. Keep moving, Pulse!",
+            "The city is yours. Grab both instruments before the guard cuts you off!",
+            "Rooftop run. One guard on your tail. Learn the rhythm — now go!",
         },
         ["Music Museum"] = new[]
         {

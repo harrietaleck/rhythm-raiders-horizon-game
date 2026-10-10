@@ -336,6 +336,8 @@ public class PickupBase : MonoBehaviour
     {
         if (artifactAmount < ArtifactsToWin || currentHealth < 1)
             return false;
+        if (GameManager.EndlessRun)
+            return false;
 
         Debug.Log($"Player collected {artifactAmount} artifacts — victory!");
         Victory();
