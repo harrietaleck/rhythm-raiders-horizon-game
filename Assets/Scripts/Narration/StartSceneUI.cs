@@ -48,7 +48,7 @@ public class StartSceneUI : MonoBehaviour
         "Welcome to Rhythm Raiders: Beat Horizon!",
         "You are Pulse — a rhythm thief infiltrating venues controlled by the Conductors.",
         "Steal two musical artifacts per level. Outrun the guard. Restore the city's beat.",
-        "Level 1: The Opera House. Level 2: The Music Museum. Level 3: The Underground Club. Good luck!"
+        "Level 1: The Rooftops. Level 2: The Music Museum. Level 3: The Underground Club. Good luck!"
     };
 
     public string speakerName = "";

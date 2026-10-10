@@ -10,20 +10,25 @@ using TMPro;
 /// </summary>
 public class SetupMainMenu
 {
-    public const string MenuBgPath = "Assets/UI/Menu/main_menu_background.png";
+    public const string MenuBgPath = "Assets/UI/Splash/title_horizon.jpg";
 
-    private static readonly Vector2 PlayMin      = new Vector2(0.28f, 0.647f);
-    private static readonly Vector2 PlayMax      = new Vector2(0.72f, 0.740f);
-    private static readonly Vector2 Level2Min    = new Vector2(0.28f, 0.554f);
-    private static readonly Vector2 Level2Max    = new Vector2(0.72f, 0.647f);
-    private static readonly Vector2 Level3Min    = new Vector2(0.28f, 0.461f);
-    private static readonly Vector2 Level3Max    = new Vector2(0.72f, 0.554f);
-    private static readonly Vector2 PauseMin     = new Vector2(0.28f, 0.368f);
-    private static readonly Vector2 PauseMax     = new Vector2(0.72f, 0.461f);
-    private static readonly Vector2 NarrativeMin = new Vector2(0.28f, 0.275f);
-    private static readonly Vector2 NarrativeMax = new Vector2(0.72f, 0.368f);
-    private static readonly Vector2 SettingsMin  = new Vector2(0.28f, 0.182f);
-    private static readonly Vector2 SettingsMax  = new Vector2(0.72f, 0.275f);
+    // Stacked under the baked-in title of the sunset art.
+    private static readonly Vector2 PlayMin      = new Vector2(0.35f, 0.462f);
+    private static readonly Vector2 PlayMax      = new Vector2(0.65f, 0.530f);
+    private static readonly Vector2 Level2Min    = new Vector2(0.35f, 0.387f);
+    private static readonly Vector2 Level2Max    = new Vector2(0.65f, 0.455f);
+    private static readonly Vector2 Level3Min    = new Vector2(0.35f, 0.312f);
+    private static readonly Vector2 Level3Max    = new Vector2(0.65f, 0.380f);
+    private static readonly Vector2 PauseMin     = new Vector2(0.35f, 0.237f);
+    private static readonly Vector2 PauseMax     = new Vector2(0.65f, 0.305f);
+    private static readonly Vector2 NarrativeMin = new Vector2(0.35f, 0.162f);
+    private static readonly Vector2 NarrativeMax = new Vector2(0.65f, 0.230f);
+    private static readonly Vector2 SettingsMin  = new Vector2(0.35f, 0.087f);
+    private static readonly Vector2 SettingsMax  = new Vector2(0.65f, 0.155f);
+
+    private static readonly Color ButtonNormal  = new Color(0.06f, 0.05f, 0.12f, 1f);
+    private static readonly Color ButtonHover   = new Color(1f, 0.48f, 0.22f, 0.95f);
+    private static readonly Color ButtonPressed = new Color(0.85f, 0.32f, 0.12f, 1f);
 
     [MenuItem("Tools/Setup Main Menu")]
     public static void Setup()
@@ -162,14 +167,15 @@ public class SetupMainMenu
         SetAnchors(go, min, max);
 
         var img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
-        img.color = new Color(1f, 0.52f, 0.12f, 0.82f);
+        img.color = Color.white;
         img.raycastTarget = true;
 
         var btn = go.GetComponent<Button>() ?? go.AddComponent<Button>();
         var colors = btn.colors;
-        colors.normalColor      = new Color(1f, 0.52f, 0.12f, 0.82f);
-        colors.highlightedColor = new Color(1f, 0.72f, 0.28f, 0.95f);
-        colors.pressedColor     = new Color(0.85f, 0.38f, 0.05f, 1f);
+        colors.normalColor      = ButtonNormal;
+        colors.highlightedColor = ButtonHover;
+        colors.selectedColor    = ButtonNormal;
+        colors.pressedColor     = ButtonPressed;
         btn.colors = colors;
 
         var labelGo = go.transform.Find("Label")?.gameObject;
@@ -187,11 +193,11 @@ public class SetupMainMenu
 
         var tmp = labelGo.GetComponent<TextMeshProUGUI>() ?? labelGo.AddComponent<TextMeshProUGUI>();
         tmp.text = label;
-        tmp.fontSize = 44;
-        tmp.fontStyle = FontStyles.Bold;
-        tmp.color = new Color(0.12f, 0.08f, 0.04f, 1f);
-        tmp.outlineWidth = 0.08f;
-        tmp.outlineColor = new Color(1f, 0.9f, 0.6f, 0.5f);
+        tmp.fontSize = 34;
+        tmp.fontStyle = FontStyles.Normal;
+        tmp.characterSpacing = 8f;
+        tmp.color = Color.white;
+        tmp.outlineWidth = 0f;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.raycastTarget = false;
         ApplyFont(tmp);
@@ -274,7 +280,7 @@ public class SetupMainMenu
 
         var box = EnsurePanel(panel, "SettingsBox", new Vector2(0.25f, 0.28f), new Vector2(0.75f, 0.72f));
         var boxImg = box.GetComponent<Image>() ?? box.AddComponent<Image>();
-        boxImg.color = new Color(0.12f, 0.12f, 0.14f, 0.95f);
+        boxImg.color = new Color(0.06f, 0.05f, 0.12f, 0.92f);
 
         var titleTmp = EnsureLabel(box, "Title", "SETTINGS", new Vector2(0.05f, 0.82f), new Vector2(0.95f, 0.96f), 48);
 
@@ -391,8 +397,10 @@ public class SetupMainMenu
 
     private static void ApplyFont(TextMeshProUGUI tmp)
     {
-        var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(
-            "Assets/Unity UI Samples/Fonts/Jupiter/Jupiter SDF.asset");
+        var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/UI/Fonts/Coiny SDF.asset");
+        if (font == null)
+            font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(
+                "Assets/Unity UI Samples/Fonts/Jupiter/Jupiter SDF.asset");
         if (font != null) tmp.font = font;
     }
 

@@ -10,7 +10,8 @@ using UnityEngine.UI;
 public class SetupSplashScene
 {
     private const string ScenePath = "Assets/Scenes/SplashScene.unity";
-    private const string SplashImagePath = "Assets/UI/Splash/rhythm_raiders_splash.png";
+    private const string LogoPath = "Assets/UI/Splash/logo_horizon.jpg";
+    private const string TitlePath = "Assets/UI/Splash/title_horizon.jpg";
 
     [MenuItem("Tools/Rebuild Splash Scene")]
     public static void Rebuild()
@@ -24,7 +25,8 @@ public class SetupSplashScene
     [MenuItem("Tools/Setup Splash Scene")]
     public static void Setup()
     {
-        EnsureSplashTextureImport();
+        EnsureSplashTextureImport(LogoPath);
+        EnsureSplashTextureImport(TitlePath);
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
         scene.name = "SplashScene";
@@ -41,26 +43,16 @@ public class SetupSplashScene
         rootRt.anchorMax = Vector2.one;
         rootRt.offsetMin = rootRt.offsetMax = Vector2.zero;
 
-        var splashGO = new GameObject("SplashImage");
-        splashGO.transform.SetParent(splashRoot.transform, false);
-        var splashRt = splashGO.AddComponent<RectTransform>();
-        splashRt.anchorMin = Vector2.zero;
-        splashRt.anchorMax = Vector2.one;
-        splashRt.offsetMin = splashRt.offsetMax = Vector2.zero;
-
-        var img = splashGO.AddComponent<Image>();
-        img.raycastTarget = false;
-        img.preserveAspect = false;
-        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(SplashImagePath);
-        if (sprite != null)
-            img.sprite = sprite;
-        else
-            Debug.LogWarning($"[SetupSplash] Splash sprite not found at {SplashImagePath}");
+        var logo = CreateFullImage(splashRoot.transform, "LogoImage", LogoPath);
+        var title = CreateFullImage(splashRoot.transform, "TitleImage", TitlePath);
+        title.gameObject.SetActive(false);
 
         var controller = canvas.AddComponent<SplashScreenController>();
         controller.splashRoot = rootRt;
-        controller.splashImage = img;
-        controller.displayDuration = 3f;
+        controller.logoImage = logo;
+        controller.titleImage = title;
+        controller.splashImage = title;
+        controller.displayDuration = 2.4f;
         controller.nextSceneName = "StartScene";
 
         EditorSceneManager.SaveScene(scene, ScenePath);
@@ -80,12 +72,30 @@ public class SetupSplashScene
         Debug.Log($"[SetupSplash] Saved {ScenePath}");
     }
 
-    private static void EnsureSplashTextureImport()
+    private static Image CreateFullImage(Transform parent, string name, string spritePath)
     {
-        var importer = AssetImporter.GetAtPath(SplashImagePath) as TextureImporter;
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var rt = go.AddComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+        var img = go.AddComponent<Image>();
+        img.raycastTarget = false;
+        img.preserveAspect = name == "LogoImage";
+        img.color = Color.white;
+        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+        if (sprite != null) img.sprite = sprite;
+        else Debug.LogWarning("[SetupSplash] Missing sprite " + spritePath);
+        return img;
+    }
+
+    private static void EnsureSplashTextureImport(string path)
+    {
+        var importer = AssetImporter.GetAtPath(path) as TextureImporter;
         if (importer == null)
         {
-            Debug.LogWarning($"[SetupSplash] Texture missing: {SplashImagePath}");
+            Debug.LogWarning($"[SetupSplash] Texture missing: {path}");
             return;
         }
 

@@ -16,10 +16,15 @@ public class SplashScreenController : MonoBehaviour
     [Header("UI")]
     public RectTransform splashRoot;
     public Image splashImage;
+    public Image logoImage;
+    public Image titleImage;
+    public Image brandImage;
 
     [Header("Animation")]
     public float pulseScale = 1.02f;
-    public float pulseSpeed = 2f;
+    public float pulseSpeed = 1.2f;
+
+    private bool _waitingForTap;
 
     private void Awake()
     {
@@ -32,6 +37,13 @@ public class SplashScreenController : MonoBehaviour
         Time.timeScale = 1f;
         EnsureCanvasLayout();
         StartCoroutine(RunSplash());
+    }
+
+    private void Update()
+    {
+        if (!_waitingForTap) return;
+        if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
+            SceneFader.LoadScene(nextSceneName);
     }
 
     private void EnsureCanvasLayout()
@@ -51,15 +63,46 @@ public class SplashScreenController : MonoBehaviour
         if (splashRoot != null)
             splashRoot.gameObject.SetActive(true);
 
+        if (logoImage != null) logoImage.gameObject.SetActive(true);
+        if (brandImage != null) brandImage.gameObject.SetActive(false);
+        if (titleImage != null) titleImage.gameObject.SetActive(false);
+
+        yield return Hold(displayDuration);
+
+        if (brandImage != null)
+        {
+            if (logoImage != null) logoImage.gameObject.SetActive(false);
+            brandImage.gameObject.SetActive(true);
+            yield return Hold(displayDuration);
+            brandImage.gameObject.SetActive(false);
+        }
+        else if (logoImage != null)
+        {
+            logoImage.gameObject.SetActive(false);
+        }
+        if (titleImage != null)
+        {
+            titleImage.gameObject.SetActive(true);
+            if (splashRoot != null) splashRoot.localScale = Vector3.one;
+        }
+        else if (splashImage != null && titleImage == null)
+        {
+            _waitingForTap = true;
+            yield break;
+        }
+
+        _waitingForTap = true;
+    }
+
+    private IEnumerator Hold(float duration)
+    {
         float elapsed = 0f;
-        while (elapsed < displayDuration)
+        while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
             AnimatePulse(elapsed);
             yield return null;
         }
-
-        SceneFader.LoadScene(nextSceneName);
     }
 
     private void AnimatePulse(float time)
