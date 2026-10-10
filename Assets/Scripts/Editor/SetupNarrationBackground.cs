@@ -10,11 +10,10 @@ using TMPro;
 /// </summary>
 public class SetupNarrationBackground
 {
-    public const string NARRATION_BG_PATH = "Assets/UI/Narration/narration_background.png";
+    public const string NARRATION_BG_PATH = "Assets/UI/SciFi/screen_background.jpg";
 
-    // White text box region on the narrative art (1920×1080 reference).
-    private static readonly Vector2 TextAreaMin = new Vector2(0.11f, 0.33f);
-    private static readonly Vector2 TextAreaMax = new Vector2(0.89f, 0.61f);
+    private static readonly Vector2 TextBoxMin = new Vector2(0.16f, 0.26f);
+    private static readonly Vector2 TextBoxMax = new Vector2(0.84f, 0.66f);
 
     [MenuItem("Tools/Setup Start Scene Narration")]
     public static void SetupStartSceneOnly()
@@ -143,15 +142,8 @@ public class SetupNarrationBackground
         SetAnchors(panel, Vector2.zero, Vector2.one);
 
         var img = panel.GetComponent<Image>() ?? panel.AddComponent<Image>();
-        img.color = Color.white;
+        SciFiUiKit.StyleBackground(img);
         img.raycastTarget = false;
-        img.preserveAspect = false;
-        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(NARRATION_BG_PATH);
-        if (sprite != null)
-        {
-            img.sprite = sprite;
-            img.type = Image.Type.Simple;
-        }
 
         var speaker = panel.transform.Find("SpeakerText");
         if (speaker != null)
@@ -168,14 +160,26 @@ public class SetupNarrationBackground
             textGo.AddComponent<TextMeshProUGUI>();
         }
 
-        SetAnchors(textGo, TextAreaMin, TextAreaMax);
+        var boxTr = panel.transform.Find("TextBox");
+        var boxGo = boxTr != null ? boxTr.gameObject : new GameObject("TextBox", typeof(RectTransform), typeof(Image));
+        boxGo.transform.SetParent(panel.transform, false);
+        boxGo.transform.SetAsFirstSibling();
+        SetAnchors(boxGo, TextBoxMin, TextBoxMax);
+        var boxImg = boxGo.GetComponent<Image>();
+        SciFiUiKit.StyleWindow(boxImg);
+        boxImg.raycastTarget = false;
+
+        SetAnchors(textGo, TextBoxMin, TextBoxMax);
+        var textRt = textGo.GetComponent<RectTransform>();
+        textRt.offsetMin = new Vector2(72f, 48f);
+        textRt.offsetMax = new Vector2(-72f, -48f);
 
         var tmp = textGo.GetComponent<TextMeshProUGUI>();
         if (tmp != null)
         {
             tmp.text = "";
             tmp.fontSize = 30;
-            tmp.color = new Color(0.12f, 0.12f, 0.12f, 1f);
+            tmp.color = Color.white;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.textWrappingMode = TextWrappingModes.Normal;
             tmp.verticalAlignment = VerticalAlignmentOptions.Middle;
@@ -187,8 +191,8 @@ public class SetupNarrationBackground
         EditorUtility.SetDirty(panel);
     }
 
-    private static readonly Vector2 NextButtonMin = new Vector2(0.70f, 0.04f);
-    private static readonly Vector2 NextButtonMax = new Vector2(0.94f, 0.18f);
+    private static readonly Vector2 NextButtonMin = new Vector2(0.40f, 0.11f);
+    private static readonly Vector2 NextButtonMax = new Vector2(0.60f, 0.21f);
 
     public static Button EnsureNarrationNextButton(Transform panel)
     {
@@ -215,30 +219,11 @@ public class SetupNarrationBackground
         if (go.GetComponent<NarrationAdvanceButton>() == null)
             go.AddComponent<NarrationAdvanceButton>();
 
-        var img = go.GetComponent<Image>();
-        img.sprite = null;
-        img.type = Image.Type.Simple;
-        img.color = new Color(0.96f, 0.92f, 0.86f, 1f);
-        img.raycastTarget = true;
-        btn.targetGraphic = img;
-
-        var colors = btn.colors;
-        colors.normalColor      = Color.white;
-        colors.highlightedColor = new Color(1f, 0.98f, 0.94f, 1f);
-        colors.pressedColor     = new Color(0.88f, 0.82f, 0.74f, 1f);
-        colors.selectedColor    = Color.white;
-        btn.colors = colors;
-
         var label = go.GetComponentInChildren<TextMeshProUGUI>();
+        SciFiUiKit.StyleButton(btn, label, 30);
         if (label != null)
         {
             label.text = "NEXT";
-            label.fontSize = 28;
-            label.fontStyle = FontStyles.Bold;
-            label.color = new Color(0.25f, 0.18f, 0.12f, 1f);
-            label.alignment = TextAlignmentOptions.Center;
-            label.raycastTarget = false;
-            ApplyFont(label);
 
             var lrt = label.GetComponent<RectTransform>();
             lrt.anchorMin = Vector2.zero;
@@ -272,8 +257,9 @@ public class SetupNarrationBackground
 
     private static void ApplyFont(TextMeshProUGUI tmp)
     {
-        var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(
-            "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset");
+        var font = SciFiUiKit.TmpFont
+                   ?? AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(
+                       "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset");
         if (font == null) return;
         tmp.font = font;
         if (font.material != null)

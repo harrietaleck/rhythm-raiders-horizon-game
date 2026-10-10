@@ -20,7 +20,7 @@ using TMPro;
 public class SetupNarrationScenes
 {
     // ── Asset paths ───────────────────────────────────────────────────────────
-    private const string BG_PATH     = "Assets/UI/Narration/narration_background.png";
+    private const string BG_PATH     = SetupNarrationBackground.NARRATION_BG_PATH;
     private const string FONT_PATH   = "Assets/Unity UI Samples/Fonts/Jupiter/Jupiter.ttf";
     private static readonly Vector2 NarrationTextMin = new Vector2(0.11f, 0.33f);
     private static readonly Vector2 NarrationTextMax = new Vector2(0.89f, 0.61f);

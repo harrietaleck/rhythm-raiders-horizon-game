@@ -207,8 +207,8 @@ public class NarrationManager : MonoBehaviour
             var rt = advanceButton.GetComponent<RectTransform>();
             if (rt != null)
             {
-                rt.anchorMin = new Vector2(0.70f, 0.04f);
-                rt.anchorMax = new Vector2(0.94f, 0.18f);
+                rt.anchorMin = new Vector2(0.40f, 0.11f);
+                rt.anchorMax = new Vector2(0.60f, 0.21f);
                 rt.offsetMin = rt.offsetMax = Vector2.zero;
                 rt.localScale = Vector3.one;
             }
@@ -232,17 +232,32 @@ public class NarrationManager : MonoBehaviour
         var img = btn.GetComponent<Image>();
         if (img == null) return;
 
+        // Skinned in the editor (Sci-Fi GUI); keep its sprites and only fix the label.
+        if (img.sprite != null && btn.transition == Selectable.Transition.SpriteSwap)
+        {
+            img.raycastTarget = true;
+            btn.targetGraphic = img;
+            var skinnedLabel = btn.GetComponentInChildren<TextMeshProUGUI>();
+            if (skinnedLabel != null)
+            {
+                TmpUiUtility.EnsureFont(skinnedLabel);
+                skinnedLabel.text = "NEXT";
+                skinnedLabel.raycastTarget = false;
+            }
+            return;
+        }
+
         img.sprite = null;
         img.type = Image.Type.Simple;
-        img.color = new Color(0.96f, 0.92f, 0.86f, 1f);
+        img.color = Color.white;
         img.raycastTarget = true;
         btn.targetGraphic = img;
 
         var colors = btn.colors;
-        colors.normalColor      = Color.white;
-        colors.highlightedColor = new Color(1f, 0.98f, 0.94f, 1f);
-        colors.pressedColor     = new Color(0.88f, 0.82f, 0.74f, 1f);
-        colors.selectedColor    = Color.white;
+        colors.normalColor      = new Color(0.06f, 0.05f, 0.12f, 1f);
+        colors.highlightedColor = new Color(1f, 0.48f, 0.22f, 0.95f);
+        colors.pressedColor     = new Color(0.85f, 0.32f, 0.12f, 1f);
+        colors.selectedColor    = colors.normalColor;
         btn.colors = colors;
 
         var label = btn.GetComponentInChildren<TextMeshProUGUI>();
@@ -251,8 +266,9 @@ public class NarrationManager : MonoBehaviour
             TmpUiUtility.EnsureFont(label);
             label.text = "NEXT";
             label.fontSize = 28;
-            label.fontStyle = FontStyles.Bold;
-            label.color = new Color(0.25f, 0.18f, 0.12f, 1f);
+            label.fontStyle = FontStyles.Normal;
+            label.characterSpacing = 8;
+            label.color = Color.white;
             label.alignment = TextAlignmentOptions.Center;
             label.raycastTarget = false;
         }
@@ -274,7 +290,7 @@ public class NarrationManager : MonoBehaviour
         TmpUiUtility.EnsureFont(narrationText);
         narrationText.gameObject.SetActive(true);
         narrationText.fontSize = 30;
-        narrationText.color = new Color(0.12f, 0.12f, 0.12f, 1f);
+        narrationText.color = Color.white;
         narrationText.alignment = TextAlignmentOptions.Center;
         narrationText.verticalAlignment = VerticalAlignmentOptions.Middle;
         narrationText.textWrappingMode = TextWrappingModes.Normal;

@@ -1,4 +1,6 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
@@ -12,6 +14,18 @@ public class PauseMenuHUD : MonoBehaviour
     public Button     resumeButton;
     public Button     settingsButton;
     public Button     mainMenuButton;
+    public Button     restartButton;
+    public Button     controlsButton;
+
+    [Header("Level info")]
+    public TextMeshProUGUI levelTitleText;
+    public TextMeshProUGUI levelNameText;
+    public TextMeshProUGUI objectiveText;
+    public TextMeshProUGUI progressText;
+
+    [Header("Controls overlay")]
+    public GameObject controlsPanel;
+    public Button     controlsCloseButton;
 
     [Header("Settings overlay")]
     public GameObject settingsPanel;
@@ -39,14 +53,20 @@ public class PauseMenuHUD : MonoBehaviour
 
         if (pausePanel != null)    pausePanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(false);
 
         WireButton(resumeButton,        OnResume);
         WireButton(settingsButton,      OnOpenSettings);
         WireButton(mainMenuButton,      OnMainMenu);
+        WireButton(restartButton,       OnRestart);
+        WireButton(controlsButton,      OnOpenControls);
         WireButton(settingsCloseButton, OnCloseSettings);
+        WireButton(controlsCloseButton, OnCloseControls);
 
         if (mainMenuButton != null)
             mainMenuButton.gameObject.SetActive(showMainMenuButton);
+        if (restartButton != null)
+            restartButton.gameObject.SetActive(showMainMenuButton);
 
         BindVolumeSliders();
         UIInputFix.EnsureEventSystem();
@@ -75,6 +95,12 @@ public class PauseMenuHUD : MonoBehaviour
             return;
         }
 
+        if (controlsPanel != null && controlsPanel.activeSelf)
+        {
+            OnCloseControls();
+            return;
+        }
+
         if (_isOpen)
             Hide();
         else if (!requireGameStarted || GameManager.GameStarted)
@@ -94,6 +120,8 @@ public class PauseMenuHUD : MonoBehaviour
 
         if (settingsPanel != null)
             settingsPanel.SetActive(false);
+        if (controlsPanel != null)
+            controlsPanel.SetActive(false);
 
         if (pauseTimeOnOpen)
         {
@@ -101,6 +129,7 @@ public class PauseMenuHUD : MonoBehaviour
             AudioListener.pause = true;
         }
 
+        RefreshLevelInfo();
         pausePanel.SetActive(true);
         pausePanel.transform.SetAsLastSibling();
     }
@@ -111,6 +140,8 @@ public class PauseMenuHUD : MonoBehaviour
 
         if (settingsPanel != null)
             settingsPanel.SetActive(false);
+        if (controlsPanel != null)
+            controlsPanel.SetActive(false);
 
         if (pausePanel != null)
             pausePanel.SetActive(false);
@@ -146,6 +177,43 @@ public class PauseMenuHUD : MonoBehaviour
     {
         if (settingsPanel != null)
             settingsPanel.SetActive(false);
+    }
+
+    public void OnOpenControls()
+    {
+        if (controlsPanel == null) return;
+
+        UIInputFix.EnsureEventSystem();
+        controlsPanel.SetActive(true);
+        controlsPanel.transform.SetAsLastSibling();
+    }
+
+    public void OnCloseControls()
+    {
+        if (controlsPanel != null)
+            controlsPanel.SetActive(false);
+    }
+
+    public void OnRestart()
+    {
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
+        SceneFader.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    private void RefreshLevelInfo()
+    {
+        var def = LevelCatalog.Get(LevelProgress.CurrentLevel);
+        if (levelTitleText != null) levelTitleText.text = $"LEVEL {def.levelNumber}";
+        if (levelNameText  != null) levelNameText.text  = def.displayName.ToUpperInvariant();
+        if (objectiveText  != null) objectiveText.text  = def.startHint1;
+
+        if (progressText != null)
+        {
+            var pickup = FindAnyObjectByType<PickupBase>();
+            int collected = pickup != null ? pickup.artifactAmount : 0;
+            progressText.text = $"{collected} / {PickupBase.ArtifactsToWin}";
+        }
     }
 
     public void OnMainMenu()

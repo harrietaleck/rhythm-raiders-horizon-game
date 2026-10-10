@@ -200,8 +200,8 @@ public class DeathHUD : MonoBehaviour
         go.transform.SetParent(canvas, false);
 
         var rt = go.AddComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0.1f, 0.42f);
-        rt.anchorMax = new Vector2(0.9f, 0.52f);
+        rt.anchorMin = new Vector2(0.33f, 0.52f);
+        rt.anchorMax = new Vector2(0.67f, 0.63f);
         rt.offsetMin = rt.offsetMax = Vector2.zero;
 
         defeatReasonText = go.AddComponent<TextMeshProUGUI>();
@@ -214,9 +214,12 @@ public class DeathHUD : MonoBehaviour
     {
         if (text == null) return;
         text.fontSize = 36;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 20;
+        text.fontSizeMax = 36;
         text.fontStyle = FontStyles.Bold;
         text.alignment = TextAlignmentOptions.Center;
-        text.color = new Color(0.9f, 0.05f, 0.05f, 1f);
+        text.color = new Color(1f, 0.45f, 0.2f, 1f);
     }
 
     void EnsureArtifactStatsText()
@@ -233,8 +236,8 @@ public class DeathHUD : MonoBehaviour
         go.transform.SetParent(canvas, false);
 
         var rt = go.AddComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0.1f, 0.34f);
-        rt.anchorMax = new Vector2(0.9f, 0.41f);
+        rt.anchorMin = new Vector2(0.33f, 0.42f);
+        rt.anchorMax = new Vector2(0.67f, 0.50f);
         rt.offsetMin = rt.offsetMax = Vector2.zero;
 
         artifactStatsText = go.AddComponent<TextMeshProUGUI>();
@@ -249,6 +252,6 @@ public class DeathHUD : MonoBehaviour
         text.fontSize = 30;
         text.fontStyle = FontStyles.Bold;
         text.alignment = TextAlignmentOptions.Center;
-        text.color = new Color(0.15f, 0.1f, 0.08f, 1f);
+        text.color = Color.white;
     }
 }
