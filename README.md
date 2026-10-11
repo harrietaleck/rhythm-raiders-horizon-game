@@ -1,6 +1,6 @@
 # Rhythm Raiders
 
-**Rhythm Raiders** is a 3D forward-scrolling chase/collection runner built in Unity 6 (URP). You sprint down a scrolling track, collect **2 musical artifacts** to win, dodge obstacles, and stay ahead of a security guard. Three themed levels take you from an opera theatre to a museum to an underground club.
+**Rhythm Raiders** is a 3D forward-scrolling chase/collection runner built in Unity 6 (URP). You sprint down a scrolling track, collect **2 musical artifacts** to win, dodge obstacles, and stay ahead of a security guard. Three themed levels take you from sunset city rooftops to a museum to an underground club, with a persistent note wallet, shop upgrades and a daily challenge between runs.
 
 > Repository folder: `Gads-Music-game` · Unity product name: **Rhythm Raiders**  
 > Branch for active development: `harriet's_work`
@@ -9,16 +9,21 @@
 
 ## Features
 
-- **Three themed levels** — Opera House (L1), Museum (L2), Underground Club (L3)
-- **Start flow** — Title screen → intro narration → main level
+- **Three themed levels** — Sunset Rooftops (L1), Museum (L2), Underground Club (L3)
+- **Start flow** — Splash (tap to start) → main menu → intro narration → level
+- **Level 1 rooftop run** — continuously streamed street at dusk, three districts (Residential Rooftops → Neon Market at 300 m → Construction Zone at 600 m), speed ramp, score/combo multiplier, on-beat jumps (110 BPM), star rating and best distance
+- **Rooftop hazards & stunts** — roof gaps, steam vents, wet patches, alarm panels, swinging hazards, pigeon flocks, searchlight helicopter (from 350 m), zip-lines and launch ramps
+- **Power-ups** — Magnet, Shield Bubble, Smoke Bomb (stuns the guard)
+- **Shop & progression** — notes collected in runs go into a persistent wallet; spend them in the Shop on upgrades (Magnet, Bubble, Smoke Bomb, Head Start — 3 levels each) and cosmetic trails
+- **Daily challenge** — one date-seeded goal per day (distance, notes, stunts, beat jumps or combo) that pays bonus notes and builds a streak
+- **Guide scene** — how-to-play for every level plus credits
 - **Dual health system** — Shield (absorbs hits) + Vibe (direct drain from obstacles)
-- **Enemy chase** — Security guard pursues the player; contact triggers defeat animation → Death scene
+- **Enemy chase** — Security guard pursues the player with rubber-banding, a surge warning before speed bursts, and can be stunned; contact triggers defeat animation → Death scene
 - **Sci-fi HUD** — Icon-led rows for Vibe, Shield, Artifacts, Guard distance, Boost, Score, Level
 - **Pause menu** — Escape to pause; Resume / Settings (music + SFX sliders) / Main Menu
 - **Pickups** — Health, Jump Boost, Speed Boost, Sneak, Artifacts (goal)
 - **Obstacles** — Slow-down zones and health-draining hazards (drain both Shield and Vibe)
-- **Level set dressing** — Per-level themed decorations: opera curtains, museum displays, neon club strips
-- **Atmospheric end walls** — Visual landmark at the far end of each track (marble gate L2, neon portal L3)
+- **Level set dressing** — Per-level themed decorations: museum displays (L2), neon club strips (L3)
 - **Win / lose** — Victory scene (2 artifacts collected) · Death scene (caught or lethal hit)
 - **Audio** — Background music, SFX, countdown ticks, victory / game-over themes
 - **Narration** — Typewriter dialogue with scene fades and level intro screens
@@ -42,12 +47,17 @@
 
 | # | Scene file | Purpose |
 |---|-----------|---------|
-| 1 | `Assets/Scenes/StartScene.unity` | Main menu & intro narration |
-| 2 | `Assets/Scenes/MainGameL1Opera.unity` | Level 1 — Opera House |
-| 3 | `Assets/Scenes/Level2Museum.unity` | Level 2 — Museum |
-| 4 | `Assets/Scenes/Level3UndergroundDance.unity` | Level 3 — Underground Club |
-| 5 | `Assets/Scenes/DeathScene.unity` | Game over |
-| 6 | `Assets/Scenes/VictoryScene.unity` | Win screen |
+| 0 | `Assets/Scenes/SplashScene.unity` | Horizon splash art — tap to start |
+| 1 | `Assets/Scenes/StartScene.unity` | Main menu (Play, Levels, Shop, Guide) & intro narration |
+| 2 | `Assets/Scenes/MainGameL1Opera.unity` | Level 1 — Sunset Rooftops (scene keeps legacy Opera name) |
+| 3 | `Assets/Scenes/Level2IntroScene.unity` | Level 2 door intro |
+| 4 | `Assets/Scenes/Level2Museum.unity` | Level 2 — Museum |
+| 5 | `Assets/Scenes/Level3IntroScene.unity` | Level 3 door intro |
+| 6 | `Assets/Scenes/Level3UndergroundDance.unity` | Level 3 — Underground Club |
+| 7 | `Assets/Scenes/DeathScene.unity` | Game over |
+| 8 | `Assets/Scenes/VictoryScene.unity` | Win screen |
+| 9 | `Assets/Scenes/GuideScene.unity` | How to play & credits |
+| 10 | `Assets/Scenes/ShopScene.unity` | Upgrades, trails, daily challenge |
 
 Run **Tools → Setup Build Scenes** to register all scenes in Unity Build Settings.
 
@@ -56,9 +66,11 @@ Run **Tools → Setup Build Scenes** to register all scenes in Unity Build Setti
 ## Scene flow
 
 ```
-StartScene → MainGameL1Opera → Level2Museum → Level3UndergroundDance
-                ↘ DeathScene ↗ (Play Again)
-                ↘ VictoryScene ↗ (Play Again / Next Level)
+SplashScene → StartScene ─┬→ MainGameL1Opera → Level2Intro → Level2Museum → Level3Intro → Level3UndergroundDance
+                          ├→ ShopScene ──→ back to StartScene
+                          └→ GuideScene ─→ back to StartScene
+         any level ↘ DeathScene ↗ (Play Again)
+                   ↘ VictoryScene ↗ (Play Again / Next Level)
 ```
 
 ---
@@ -94,7 +106,11 @@ Full environment and editor setup: **[setup.md](setup.md)**
 | Fix Character Pink Materials | Remaps Mixamo .dae materials to URP Lit |
 | Setup Audio | Wires music & SFX clips across all scenes |
 | Setup Narration Scenes | Applies narration panel layout |
-| Setup Build Scenes | Registers all 6 scenes in Build Settings |
+| Setup Build Scenes | Registers all 11 scenes in Build Settings |
+| Setup Splash Scene / Setup Guide Scene / Setup Shop Scene | Builds those scenes' UI |
+| Setup Level 1 Street Stream | Wires the streamed rooftop street + `RunDirector` in Level 1 |
+| Debug → Open Level 1/2/3, Open Shop (Play Mode) | Jump straight to a scene while playing |
+| Debug → Add 500 Shop Notes | Test the shop without grinding |
 | Setup Gameplay HUD (Sci-Fi Icons) | Builds icon-led in-game HUD |
 | Setup Pause Screen | Adds pause panel + settings overlay to all gameplay scenes |
 | Fix Player Physics | Corrects CharacterController + trigger collider setup |
@@ -116,7 +132,12 @@ Full environment and editor setup: **[setup.md](setup.md)**
 | `SceneFader` | Cross-scene black fades |
 | `AudioManager` | Music & SFX singleton |
 | `LevelBootstrap` | Per-level runtime config (theme, spawner rules, health values) |
-| `LevelSetDressing` | Builds per-level visual decorations and end walls |
+| `LevelSetDressing` | Builds per-level visual decorations (L2/L3) |
+| `RunDirector` | Level 1 pacing: distance, districts, dusk lighting, speed ramp, combo, beat jumps, power-ups, stars, run HUD |
+| `StreetRunStream` | Streams Level 1 street tiles and district set pieces |
+| `ShopData` | Note wallet, upgrade levels and trails (PlayerPrefs) |
+| `DailyChallenge` | Date-seeded daily goal, reward and streak |
+| `ShopSceneUI` / `GuideSceneUI` / `SplashScreenController` | Menu-side scenes |
 | `GameplaySceneNames` | Single source of truth for all scene name constants |
 | `HealthDecreaseObstacle` | Data container: Shield damage, Vibe damage, instant-kill flag |
 

@@ -17,18 +17,21 @@ This file helps AI coding assistants (Claude, Cursor Agent, etc.) work effective
 
 Player runs forward automatically, strafes left/right, jumps once per landing, collects **2 artifacts** (instruments) to win, avoids obstacles, and outruns a security guard. Caught by guard or lethal obstacle → defeat animation → Death scene. Win → Victory scene.
 
+Three levels: L1 Sunset Rooftops (`MainGameL1Opera`, driven by `RunDirector`), L2 Museum, L3 Underground Club. Notes collected in runs go into a persistent wallet (`ShopData`) spent in the Shop; a `DailyChallenge` runs in Level 1.
+
 ---
 
 ## Scene flow
 
 ```
-StartScene → MainGameL1 → DeathScene | VictoryScene
-                ↑________________________|
-                   (Play Again buttons)
+SplashScene → StartScene → MainGameL1Opera → Level2Intro → Level2Museum → Level3Intro → Level3UndergroundDance
+                 ↕ ShopScene / GuideScene        any level → DeathScene | VictoryScene → Play Again
 ```
 
-- **StartScene:** `StartSceneUI`, intro narration, Play → MainGameL1  
-- **MainGameL1:** `GameManager` (narration → countdown → GO), `NarrationManager`, player, enemy, spawners  
+- **SplashScene:** `SplashScreenController`, tap to start → StartScene  
+- **StartScene:** `StartSceneUI`, intro narration, Play / Levels / Shop / Guide  
+- **ShopScene / GuideScene:** `ShopSceneUI` / `GuideSceneUI`, back → StartScene  
+- **MainGameL1Opera:** `GameManager` (narration → countdown → GO), `NarrationManager`, player, enemy, spawners  
 - **DeathScene / VictoryScene:** `DeathHUD` / `VictoryHUD`, narration, NEXT, Play Again  
 
 ---
@@ -64,6 +67,10 @@ StartScene → MainGameL1 → DeathScene | VictoryScene
 | `SceneFader` | `Assets/Scripts/Narration/SceneFader.cs` |
 | `AudioManager` | `Assets/Scripts/Audio/AudioManager.cs` |
 | `HealthDecreaseObstacle` | `Assets/Scripts/HealthDecreaseObstacle.cs` |
+| `RunDirector` | `Assets/Scripts/Rooftop/RunDirector.cs` (L1 pacing, districts, dusk lighting, power-ups, stars) |
+| `StreetRunStream` | `Assets/Scripts/Spawners/StreetRunStream.cs` |
+| Rooftop hazards | `Assets/Scripts/Rooftop/` (`RooftopGap`, `Searchlight`, `ZipLine`, `LaunchRamp`, …) |
+| `ShopData` / `DailyChallenge` | `Assets/Scripts/Progression/` |
 
 ---
 
@@ -75,6 +82,12 @@ Prefer existing menu commands over hand-editing scenes:
 - `Setup Audio` / `Setup Narration Scenes` / `Setup Build Scenes`
 - `Setup Player & Enemy Animators`
 - `Fix Player Physics`
+- `Setup Splash Scene` / `Setup Guide Scene` / `Setup Shop Scene` / `Setup Level 1 Street Stream`
+- `Debug → Open Level 1/2/3 (Play Mode)`, `Open Shop (Play Mode)`, `Add 500 Shop Notes`
+
+Note: Play mode always boots via SplashScene; use the Debug menu items to jump to a level.
+
+L1 district colours live in code (`RunDirector.districts`, non-serialized); dusk tuning (`sunIntensity`, `exposure`, `postExposure`) is serialized on the scene's RunDirector.
 
 ---
 
