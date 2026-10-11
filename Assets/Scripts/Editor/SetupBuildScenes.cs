@@ -30,6 +30,7 @@ public class SetupBuildScenes
         "Assets/Scenes/DeathScene.unity",
         "Assets/Scenes/VictoryScene.unity",
         "Assets/Scenes/GuideScene.unity",
+        "Assets/Scenes/ShopScene.unity",
     };
 
     [MenuItem("Tools/Setup Build Scenes")]
