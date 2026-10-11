@@ -26,6 +26,7 @@ public class StartSceneUI : MonoBehaviour
     public Button narrativeButton;   // NEW — opens the story narration from the menu
     public Button pauseButton;
     public Button guideButton;
+    public Button shopButton;
     public Button creditsButton;
     public Button settingsButton;
 
@@ -77,6 +78,7 @@ public class StartSceneUI : MonoBehaviour
         WireButton(narrativeButton, OnNarrative);
         WireButton(pauseButton,    OnPause);
         WireButton(guideButton,    OnGuide);
+        WireButton(shopButton,     OnShop);
         WireButton(creditsButton,  OnCredits);
         WireButton(settingsButton, OnSettings);
         WireButton(pauseResumeButton,    OnResume);
@@ -132,6 +134,11 @@ public class StartSceneUI : MonoBehaviour
     {
         GuideSceneUI.OpenCredits = false;
         SceneFader.LoadScene(GuideSceneUI.SceneName);
+    }
+
+    public void OnShop()
+    {
+        SceneFader.LoadScene(ShopSceneUI.SceneName);
     }
 
     public void OnCredits()

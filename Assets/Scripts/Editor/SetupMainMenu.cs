@@ -24,7 +24,9 @@ public class SetupMainMenu
     private static readonly Vector2 NarrativeMin = new Vector2(0.35f, 0.238f);
     private static readonly Vector2 NarrativeMax = new Vector2(0.65f, 0.294f);
     private static readonly Vector2 GuideMin     = new Vector2(0.35f, 0.179f);
-    private static readonly Vector2 GuideMax     = new Vector2(0.65f, 0.235f);
+    private static readonly Vector2 GuideMax     = new Vector2(0.495f, 0.235f);
+    private static readonly Vector2 ShopMin      = new Vector2(0.505f, 0.179f);
+    private static readonly Vector2 ShopMax      = new Vector2(0.65f, 0.235f);
     private static readonly Vector2 CreditsMin   = new Vector2(0.35f, 0.120f);
     private static readonly Vector2 CreditsMax   = new Vector2(0.65f, 0.176f);
     private static readonly Vector2 SettingsMin  = new Vector2(0.35f, 0.061f);
@@ -61,6 +63,7 @@ public class SetupMainMenu
         var pauseBtn     = EnsureMenuButton(menuPanel, "PauseButton",      "PAUSE",     PauseMin, PauseMax);
         var narrativeBtn = EnsureMenuButton(menuPanel, "NarrativeButton",  "NARRATIVE", NarrativeMin, NarrativeMax);
         var guideBtn     = EnsureMenuButton(menuPanel, "GuideButton",      "GUIDE",     GuideMin, GuideMax);
+        var shopBtn      = EnsureMenuButton(menuPanel, "ShopButton",       "SHOP",      ShopMin, ShopMax);
         var creditsBtn   = EnsureMenuButton(menuPanel, "CreditsButton",    "CREDITS",   CreditsMin, CreditsMax);
         var settingsBtn  = EnsureMenuButton(menuPanel, "SettingsButton",   "SETTINGS",  SettingsMin, SettingsMax);
         RemoveMenuSubtitle(menuPanel);
@@ -80,6 +83,7 @@ public class SetupMainMenu
         ui.pauseButton          = pauseBtn;
         ui.narrativeButton      = narrativeBtn;
         ui.guideButton          = guideBtn;
+        ui.shopButton           = shopBtn;
         ui.creditsButton        = creditsBtn;
         ui.settingsButton       = settingsBtn;
         ui.pausePanel           = pausePanel;
