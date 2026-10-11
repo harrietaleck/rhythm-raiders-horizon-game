@@ -27,11 +27,9 @@ public class LevelSetDressing : MonoBehaviour
         {
             case 2:
                 BuildMuseumDisplays(startZ);
-                BuildMuseumEndWall(startZ);
                 break;
             case 3:
                 BuildClubNeon(startZ);
-                BuildClubEndWall(startZ);
                 break;
         }
     }
@@ -119,122 +117,6 @@ public class LevelSetDressing : MonoBehaviour
                 light.color = c;
             }
         }
-    }
-
-    // ── End walls ─────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// L2 Museum: grand marble gate placed far ahead as a finish-line landmark.
-    /// No physics — player runs through it; purely atmospheric.
-    /// </summary>
-    void BuildMuseumEndWall(float startZ)
-    {
-        float wallZ = startZ + 230f;
-
-        Material marbleMat = CreateLitMaterial(new Color(0.78f, 0.75f, 0.70f));
-        Material goldMat   = CreateLitMaterial(new Color(0.85f, 0.72f, 0.25f));
-
-        // Main slab
-        var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        wall.name = "MuseumEndWall";
-        wall.transform.SetParent(_root, false);
-        wall.transform.position = new Vector3(0f, 5f, wallZ);
-        wall.transform.localScale = new Vector3(22f, 10f, 0.8f);
-        ApplyMat(wall, marbleMat);
-        DestroyCollider(wall);
-
-        // Gold top trim
-        var trim = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        trim.name = "MuseumEndTrim";
-        trim.transform.SetParent(_root, false);
-        trim.transform.position = new Vector3(0f, 10.6f, wallZ);
-        trim.transform.localScale = new Vector3(22f, 1.2f, 1.0f);
-        ApplyMat(trim, goldMat);
-        DestroyCollider(trim);
-
-        // Two marble columns flanking the doorway gap
-        foreach (int side in new[] { -1, 1 })
-        {
-            var col = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            col.name = $"MuseumColumn_{(side < 0 ? "L" : "R")}";
-            col.transform.SetParent(_root, false);
-            col.transform.position = new Vector3(side * 5f, 5f, wallZ - 0.05f);
-            col.transform.localScale = new Vector3(1.6f, 10f, 1.0f);
-            ApplyMat(col, marbleMat);
-            DestroyCollider(col);
-        }
-
-        // Warm spotlight to draw the eye
-        var spotlight = new GameObject("MuseumEndLight").AddComponent<Light>();
-        spotlight.transform.SetParent(_root, false);
-        spotlight.transform.position = new Vector3(0f, 12f, wallZ - 3f);
-        spotlight.type = LightType.Spot;
-        spotlight.range = 20f;
-        spotlight.spotAngle = 55f;
-        spotlight.intensity = 2.2f;
-        spotlight.color = new Color(1f, 0.95f, 0.80f);
-        spotlight.transform.localRotation = Quaternion.Euler(60f, 180f, 0f);
-    }
-
-    /// <summary>
-    /// L3 Underground Club: neon portal gate at the far end of the track.
-    /// No physics — purely atmospheric.
-    /// </summary>
-    void BuildClubEndWall(float startZ)
-    {
-        float wallZ = startZ + 260f;
-
-        Color purple = new Color(0.55f, 0.15f, 1f);
-        Color cyan   = new Color(0.1f,  0.95f, 1f);
-        Color pink   = new Color(1f,    0.1f,  0.85f);
-
-        // Dark backing wall
-        var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        wall.name = "ClubEndWall";
-        wall.transform.SetParent(_root, false);
-        wall.transform.position = new Vector3(0f, 5f, wallZ);
-        wall.transform.localScale = new Vector3(22f, 10f, 0.8f);
-        ApplyMat(wall, CreateLitMaterial(new Color(0.05f, 0.02f, 0.08f)));
-        DestroyCollider(wall);
-
-        // Neon top bar (cyan)
-        var topBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        topBar.name = "ClubDoorTop";
-        topBar.transform.SetParent(_root, false);
-        topBar.transform.position = new Vector3(0f, 9.6f, wallZ - 0.15f);
-        topBar.transform.localScale = new Vector3(9.2f, 0.45f, 0.35f);
-        ApplyMat(topBar, CreateLitMaterial(cyan, emissive: true));
-        DestroyCollider(topBar);
-
-        // Neon side pillars (pink)
-        foreach (int side in new[] { -1, 1 })
-        {
-            var sideBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            sideBar.name = $"ClubDoorSide_{side}";
-            sideBar.transform.SetParent(_root, false);
-            sideBar.transform.position = new Vector3(side * 4.6f, 4.8f, wallZ - 0.15f);
-            sideBar.transform.localScale = new Vector3(0.45f, 9.6f, 0.35f);
-            ApplyMat(sideBar, CreateLitMaterial(pink, emissive: true));
-            DestroyCollider(sideBar);
-        }
-
-        // Wide neon strip across the top of the whole wall (purple)
-        var topStrip = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        topStrip.name = "ClubTopStrip";
-        topStrip.transform.SetParent(_root, false);
-        topStrip.transform.position = new Vector3(0f, 10.5f, wallZ - 0.1f);
-        topStrip.transform.localScale = new Vector3(22f, 0.3f, 0.5f);
-        ApplyMat(topStrip, CreateLitMaterial(purple, emissive: true));
-        DestroyCollider(topStrip);
-
-        // Atmospheric point light
-        var light = new GameObject("ClubEndLight").AddComponent<Light>();
-        light.transform.SetParent(_root, false);
-        light.transform.position = new Vector3(0f, 5f, wallZ - 4f);
-        light.type = LightType.Point;
-        light.range = 18f;
-        light.intensity = 3.5f;
-        light.color = purple;
     }
 
     static Material CreateLitMaterial(Color color, bool emissive = false)
