@@ -121,6 +121,8 @@ public class GameManager : MonoBehaviour
     {
         if (!GameStarted || IsGameOver || _gameOverTriggered || _victoryTriggered)
             return;
+        if (PlayerCarrier.IsCarried)
+            return;
 
         var pause = FindAnyObjectByType<PauseMenuHUD>();
         if (pause != null && pause.IsOpen)

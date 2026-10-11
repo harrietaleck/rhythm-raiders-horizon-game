@@ -216,12 +216,22 @@ public class PickupBase : MonoBehaviour
     }
     public void HealthDecrease()
     {
+        if (IsInvulnerable) return;
+        PlayerHit?.Invoke();
         ApplyDamage(healthDecreaseAmount);
     }
+
+    /// <summary>Fired whenever an obstacle hit lands (after bubble/invulnerability checks).</summary>
+    public static event System.Action PlayerHit;
+
+    [HideInInspector] public float invulnerableUntil;
+    public bool IsInvulnerable => Time.time < invulnerableUntil;
 
     public void ApplyObstacleDamage(HealthDecreaseObstacle obstacle)
     {
         if (obstacle == null) return;
+        if (IsInvulnerable) return;
+        PlayerHit?.Invoke();
         if (obstacle.instantKill)
         {
             KillPlayer(DeathCause.Obstacle);
@@ -308,7 +318,7 @@ public class PickupBase : MonoBehaviour
         if (artifactAmount == 1)
         {
             var enemy = Object.FindAnyObjectByType<EnemyBase>();
-            enemy?.Surge(5f);
+            enemy?.Surge(3f);
         }
 
         TriggerArtifactDialogue();

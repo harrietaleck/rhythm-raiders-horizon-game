@@ -92,11 +92,49 @@ public class EnemyBase : MonoBehaviour
 
     float GetChaseSpeed()
     {
+        if (Time.time < _stunnedUntil)
+            return 0f;
+
         if (playerMovement != null &&
             playerMovement.forwardSpeed < playerMovement.baseForwardSpeed - 0.1f)
             return Mathf.Max(1f, playerMovement.forwardSpeed + catchUpMargin);
 
-        return speed;
+        float result = speed * _speedMultiplier;
+        if (rubberBand && !_surging && player != null)
+        {
+            float gap = player.position.z - transform.position.z;
+            if (gap > rubberBandFar)
+                result *= 1.3f;
+            else if (gap < rubberBandNear)
+                result *= 0.85f;
+        }
+        return result;
+    }
+
+    [Header("Balance")]
+    public bool rubberBand = true;
+    [Tooltip("Guard speeds up when further behind than this (metres).")]
+    public float rubberBandFar = 14f;
+    [Tooltip("Guard eases off when closer than this (metres).")]
+    public float rubberBandNear = 4f;
+    [Tooltip("Seconds of warning before a surge kicks in.")]
+    public float surgeWarning = 1.2f;
+
+    float _speedMultiplier = 1f;
+    float _stunnedUntil;
+
+    public bool IsWarning { get; private set; }
+    public bool IsStunned => Time.time < _stunnedUntil;
+    public static event System.Action SurgeWarned;
+
+    public void SetSpeedMultiplier(float multiplier)
+    {
+        _speedMultiplier = Mathf.Max(0.1f, multiplier);
+    }
+
+    public void Stun(float seconds)
+    {
+        _stunnedUntil = Mathf.Max(_stunnedUntil, Time.time + seconds);
     }
 
     private void SnapToGround(bool instant)
@@ -162,7 +200,21 @@ public class EnemyBase : MonoBehaviour
     /// </summary>
     public void Surge(float duration)
     {
-        if (_surging) return;   // already surging
+        if (_surging || IsWarning) return;
+        StartCoroutine(SurgeAfterWarning(duration));
+    }
+
+    System.Collections.IEnumerator SurgeAfterWarning(float duration)
+    {
+        IsWarning = true;
+        SurgeWarned?.Invoke();
+        yield return new WaitForSeconds(surgeWarning);
+        IsWarning = false;
+        BeginSurge(duration);
+    }
+
+    void BeginSurge(float duration)
+    {
         speed         = boostedSpeed;
         _surgeDuration = duration;
         _surgeTimer   = 0f;
