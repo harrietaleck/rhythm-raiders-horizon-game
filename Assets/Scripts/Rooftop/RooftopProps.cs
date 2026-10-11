@@ -243,20 +243,65 @@ public static class RooftopProps
 
         var pit = Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.015f, 0), new Vector3(width, 0.03f, length),
                        Mat(crumble ? new Color(0.4f, 0.36f, 0.33f) : new Color(0.01f, 0.01f, 0.02f)), false);
+        var warning = root.AddComponent<GapWarning>();
+        var glows = new List<Renderer>();
+        var chevrons = new List<Renderer>();
+        float nearEdge = -length * 0.5f;
+
         if (!crumble)
         {
-            Part(PrimitiveType.Cube, root.transform, new Vector3(0, -6f, 0), new Vector3(width, 12f, length), Mat(new Color(0.02f, 0.02f, 0.04f)), false);
-            var stripe = Mat(new Color(1f, 0.8f, 0.1f), 1.2f);
-            Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.035f, -length * 0.5f - 0.2f), new Vector3(width, 0.04f, 0.4f), stripe, false);
-            Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.035f, length * 0.5f + 0.2f), new Vector3(width, 0.04f, 0.4f), stripe, false);
+            Part(PrimitiveType.Cube, root.transform, new Vector3(0, -6f, 0), new Vector3(width, 12f, length), Mat(new Color(0.01f, 0.01f, 0.015f)), false);
+
+            // Black pit with a red danger glow rising out of it, and red lips on both edges.
+            var lip = Glow(new Color(1f, 0.1f, 0.06f, 0.95f));
+            glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.08f, nearEdge - 0.4f), new Vector3(width, 0.16f, 0.8f), lip, false).GetComponent<Renderer>());
+            glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.08f, -nearEdge + 0.4f), new Vector3(width, 0.16f, 0.8f), lip, false).GetComponent<Renderer>());
+            var haze = Glow(new Color(1f, 0.04f, 0.02f, 0.45f));
+            glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, -0.4f, 0), new Vector3(width, 0.02f, length - 0.2f), haze, false).GetComponent<Renderer>());
+            glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.6f, nearEdge + 0.05f), new Vector3(width, 1.2f, 0.04f), Glow(new Color(1f, 0.06f, 0.03f, 0.22f)), false).GetComponent<Renderer>());
+
+            var pitLight = new GameObject("PitGlow").AddComponent<Light>();
+            pitLight.transform.SetParent(root.transform, false);
+            pitLight.transform.localPosition = new Vector3(0, -0.6f, 0);
+            pitLight.type = LightType.Point;
+            pitLight.color = new Color(1f, 0.08f, 0.05f);
+            pitLight.range = 8f;
+            pitLight.intensity = 4f;
+            warning.pitLight = pitLight;
+
+            // Steel gantry over the near edge: two upright bar towers and a bar girder across the road.
+            var beaconMat = Glow(new Color(1f, 0.1f, 0.05f, 1f));
+            var beacons = new List<Renderer>();
+            float towerTop = BuildGantry(root.transform, width, nearEdge - 0.6f);
+            foreach (float side in new[] { -1f, 1f })
+            {
+                float x = side * (width * 0.5f - 0.9f);
+                beacons.Add(Part(PrimitiveType.Sphere, root.transform, new Vector3(x, towerTop + 0.35f, nearEdge - 0.6f), Vector3.one * 0.6f, beaconMat, false).GetComponent<Renderer>());
+            }
+            warning.beacons = beacons.ToArray();
+            glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, towerTop - 0.1f, nearEdge - 0.45f), new Vector3(width - 2.2f, 0.12f, 0.06f),
+                           Glow(new Color(1f, 0.12f, 0.06f, 0.95f)), false).GetComponent<Renderer>());
+
+            // Red chevron runway in every lane, sweeping toward the edge.
+            for (int row = 3; row >= 1; row--)
+                for (int lane = -1; lane <= 1; lane++)
+                    Chevron(root.transform, new Vector3(lane * LaneWidth, 0.04f, nearEdge - 1.5f - row * 3.5f), new Color(1f, 0.12f, 0.08f, 1f), chevrons);
+            warning.color = new Color(1f, 0.18f, 0.12f);
         }
         else
         {
-            var crack = Mat(new Color(0.12f, 0.1f, 0.09f));
+            var crack = Glow(new Color(1f, 0.6f, 0.15f, 0.9f));
             for (int i = 0; i < 4; i++)
-                Part(PrimitiveType.Cube, root.transform, new Vector3(Random.Range(-1.4f, 1.4f), 0.035f, Random.Range(-1.4f, 1.4f)),
-                     new Vector3(Random.Range(0.8f, 2f), 0.01f, 0.08f), crack, false, new Vector3(0, Random.Range(0f, 180f), 0));
+                glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(Random.Range(-1.4f, 1.4f), 0.035f, Random.Range(-1.4f, 1.4f)),
+                     new Vector3(Random.Range(0.8f, 2f), 0.01f, 0.1f), crack, false, new Vector3(0, Random.Range(0f, 180f), 0)).GetComponent<Renderer>());
+            Chevron(root.transform, new Vector3(0, 0.04f, nearEdge - 2.5f), new Color(1f, 0.75f, 0.2f, 1f), chevrons);
+            warning.color = new Color(1f, 0.7f, 0.2f);
+            warning.callout = "CRUMBLING ROOF!";
+            warning.warnDistance = 18f;
         }
+
+        warning.glows = glows.ToArray();
+        warning.chevrons = chevrons.ToArray();
 
         var gap = root.AddComponent<RooftopGap>();
         gap.crumble = crumble;
@@ -269,12 +314,71 @@ public static class RooftopProps
         return root;
     }
 
+    public static GameObject SteelBars;
+
+    /// <summary>
+    /// Steel gantry from the PixelDrift gate panel: towers either side and a girder across.
+    /// Falls back to plain posts when the prefab isn't assigned. Returns the tower height.
+    /// </summary>
+    static float BuildGantry(Transform parent, float width, float z)
+    {
+        const float towerScale = 0.56f;   // girder clears the zip-line cable and a rider
+        const float panelWidth = 2.477f, panelHeight = 8.208f, panelCentreX = -1.145f;
+        float towerHeight = panelHeight * towerScale;
+        float span = width - 1.8f;
+
+        if (SteelBars == null)
+        {
+            var post = Mat(new Color(0.2f, 0.2f, 0.24f));
+            foreach (float side in new[] { -1f, 1f })
+                Part(PrimitiveType.Cylinder, parent, new Vector3(side * (width * 0.5f - 0.9f), towerHeight * 0.5f, z), new Vector3(0.18f, towerHeight * 0.5f, 0.18f), post, false);
+            Part(PrimitiveType.Cube, parent, new Vector3(0, towerHeight, z), new Vector3(span, 0.25f, 0.2f), post, false);
+            return towerHeight;
+        }
+
+        foreach (float side in new[] { -1f, 1f })
+        {
+            float x = side * (width * 0.5f - 0.9f);
+            var tower = SteelPiece(parent, "SteelTower");
+            tower.transform.localPosition = new Vector3(x - panelCentreX * towerScale, 0f, z);
+            tower.transform.localScale = Vector3.one * towerScale;
+        }
+
+        // Panel turned on its side: its 8 m length runs across the road.
+        const float girderDepth = 0.3f;
+        var girder = SteelPiece(parent, "SteelGirder");
+        girder.transform.localEulerAngles = new Vector3(0f, 0f, 90f);
+        girder.transform.localScale = new Vector3(girderDepth, span / panelHeight, 0.6f);
+        girder.transform.localPosition = new Vector3(span * 0.5f, towerHeight + panelWidth * girderDepth * 0.96f, z);
+        return towerHeight;
+    }
+
+    static GameObject SteelPiece(Transform parent, string name)
+    {
+        var go = Object.Instantiate(SteelBars, parent);
+        go.name = name;
+        go.isStatic = false;
+        foreach (var c in go.GetComponentsInChildren<Collider>()) Object.Destroy(c);
+        return go;
+    }
+
+    static void Chevron(Transform parent, Vector3 localPos, Color color, List<Renderer> into)
+    {
+        var root = new GameObject("Chevron");
+        root.transform.SetParent(parent, false);
+        root.transform.localPosition = localPos;
+        var mat = Glow(color);
+        foreach (float side in new[] { -1f, 1f })
+            into.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(side * 0.75f, 0, 0), new Vector3(0.5f, 0.05f, 2.2f),
+                          mat, false, new Vector3(0, -side * 45f, 0)).GetComponent<Renderer>());
+    }
+
     /// <summary>Zip-line between two posts. Running into the start handle carries the player.</summary>
     public static GameObject ZipLine(Transform parent, Vector3 startFeet, Vector3 endFeet)
     {
         var root = Root("Zip Line", parent, startFeet);
         var post = Mat(new Color(0.22f, 0.22f, 0.26f));
-        var glow = Mat(new Color(0.35f, 0.85f, 1f), 3f);
+        var glow = Glow(new Color(0.35f, 0.9f, 1f, 1f));
         float topY = 3.6f;
         Vector3 end = endFeet - startFeet;
 
@@ -284,8 +388,11 @@ public static class RooftopProps
         Part(PrimitiveType.Cube, root.transform, end + new Vector3(-0.8f, topY, 0), new Vector3(1.6f, 0.12f, 0.12f), post, false);
 
         float len = end.magnitude;
-        Part(PrimitiveType.Cube, root.transform, new Vector3(0, topY, len * 0.5f), new Vector3(0.05f, 0.05f, len), glow, false);
-        Part(PrimitiveType.Cube, root.transform, new Vector3(0, topY - 0.9f, 0.4f), new Vector3(0.8f, 0.08f, 0.08f), Mat(new Color(1f, 0.8f, 0.1f), 2f), false);
+        Part(PrimitiveType.Cube, root.transform, new Vector3(0, topY, len * 0.5f), new Vector3(0.09f, 0.09f, len), glow, false);
+        Part(PrimitiveType.Cube, root.transform, new Vector3(0, topY - 0.9f, 0.4f), new Vector3(0.9f, 0.1f, 0.1f), Glow(new Color(1f, 0.85f, 0.15f, 1f)), false);
+        // Cyan caps on both posts so the zip lane reads from a distance.
+        Part(PrimitiveType.Sphere, root.transform, new Vector3(-1.6f, topY + 0.15f, 0), Vector3.one * 0.35f, glow, false);
+        Part(PrimitiveType.Sphere, root.transform, end + new Vector3(-1.6f, topY + 0.15f, 0), Vector3.one * 0.35f, glow, false);
         Part(PrimitiveType.Cube, root.transform, new Vector3(0, topY - 0.45f, 0.4f), new Vector3(0.04f, 0.9f, 0.04f), post, false);
 
         var zip = root.AddComponent<global::ZipLine>();

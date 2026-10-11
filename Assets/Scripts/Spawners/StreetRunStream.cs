@@ -26,6 +26,10 @@ public class StreetRunStream : MonoBehaviour
     [Range(0f, 1f)] public float hazardChanceMax = 0.75f;
     public float rampDistance = 700f;
 
+    [Header("Gap dressing")]
+    [Tooltip("Steel bar panel (PixelDrift Metro Gate_02d) used for the gantry over roof gaps.")]
+    public GameObject steelBarPrefab;
+
     readonly List<GameObject> _segments = new List<GameObject>();
     GameObject _template;
     Transform _player;
@@ -43,6 +47,7 @@ public class StreetRunStream : MonoBehaviour
         _origin = segment.transform.position;
         _startZ = segmentStartZ;
         _surfaceY = MeasureSurface(segment);
+        RooftopProps.SteelBars = steelBarPrefab;
 
         HideTemplates(advantages);
         HideTemplates(hazards);
@@ -232,13 +237,13 @@ public class StreetRunStream : MonoBehaviour
         }
     }
 
-    float GapSet(Transform parent, float z, float length, bool zip, float zipLane)
+    float GapSet(Transform parent, float z, float length, bool zip, float zipLane, float avoidLane = float.NaN)
     {
         float gapCenter = z + 6f;
         RooftopProps.Gap(parent, new Vector3(0f, _surfaceY, gapCenter), length, zip, zipLane);
 
-        // Notes trace the jump arc over the gap in a lane without the zip-line.
-        float arcLane = FreeLane(zipLane, zipLane);
+        // Notes trace the jump arc over the gap in a lane without the zip-line (or ramp).
+        float arcLane = FreeLane(zipLane, float.IsNaN(avoidLane) ? zipLane : avoidLane);
         for (int i = 0; i < 5; i++)
         {
             float k = i / 4f;
@@ -253,7 +258,7 @@ public class StreetRunStream : MonoBehaviour
     {
         float rampLane = PickLane();
         RooftopProps.Ramp(parent, new Vector3(rampLane, _surfaceY, z), 17f);
-        GapSet(parent, z + 3f, gapLength, false, rampLane);
+        GapSet(parent, z + 3f, gapLength, true, FreeLane(rampLane, rampLane), rampLane);
         for (int i = 0; i < 4; i++)
             RooftopProps.Note(parent, new Vector3(rampLane, _surfaceY + 3f + Mathf.Sin(i / 3f * Mathf.PI) * 1.5f, z + 4f + i * 3.5f));
         return 3f + 6f + gapLength + 6f;

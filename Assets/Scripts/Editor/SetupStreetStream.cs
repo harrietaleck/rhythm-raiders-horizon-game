@@ -11,6 +11,22 @@ public static class SetupStreetStream
     const string ScenePath = "Assets/Scenes/MainGameL1Opera.unity";
     const float TargetPathWidth = 12f;
 
+    const string SteelBarPath = "Assets/EmaceArt/PixelDrift Metro Free/Prefabs/GroundDecor/Props/PAEA01_GroundDecor_Gate_02d_PRE.prefab";
+
+    [MenuItem("Tools/Assign Gap Steel Bars (Level 1)")]
+    static void AssignSteelBars()
+    {
+        if (Application.isPlaying) return;
+        var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var stream = Object.FindAnyObjectByType<StreetRunStream>();
+        if (stream == null) { Debug.LogWarning("[StreetStream] No StreetRunStream in Level 1."); return; }
+        stream.steelBarPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SteelBarPath);
+        EditorUtility.SetDirty(stream);
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log($"[StreetStream] Gap steel bars assigned: {stream.steelBarPrefab != null}");
+    }
+
     [MenuItem("Tools/Setup Level 1 Street Stream")]
     public static void Run()
     {
@@ -87,6 +103,7 @@ public static class SetupStreetStream
         stream.fragmentTemplate = fragments.Length > 0 ? fragments[0] : null;
         foreach (var f in fragments) f.SetActive(false);
         stream.fragmentDistances = new[] { 250f, 500f };
+        stream.steelBarPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SteelBarPath);
         EditorUtility.SetDirty(stream);
 
         var director = root.GetComponent<RunDirector>() ?? root.AddComponent<RunDirector>();
