@@ -109,6 +109,22 @@ public static class SetupShopScene
         if (Application.isPlaying) UnityEngine.SceneManagement.SceneManager.LoadScene(ShopSceneUI.SceneName);
     }
 
+    [MenuItem("Tools/Debug/Open Level 1 (Play Mode)")]
+    static void OpenLevel1() => OpenLevel(1);
+
+    [MenuItem("Tools/Debug/Open Level 2 (Play Mode)")]
+    static void OpenLevel2() => OpenLevel(2);
+
+    [MenuItem("Tools/Debug/Open Level 3 (Play Mode)")]
+    static void OpenLevel3() => OpenLevel(3);
+
+    static void OpenLevel(int level)
+    {
+        if (!Application.isPlaying) return;
+        LevelProgress.SetLevel(level);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(LevelCatalog.GetGameplayScene(level));
+    }
+
     static void Header(GameObject window, string name, string text, float yMin, float yMax)
     {
         var h = Label(window, name, text, new Vector2(0.10f, yMin), new Vector2(0.90f, yMax), 28, SciFiUiKit.Cyan);
