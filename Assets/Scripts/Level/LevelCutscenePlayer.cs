@@ -5,7 +5,7 @@ using TMPro;
 
 /// <summary>
 /// Full-screen UI cutscenes per level theme:
-/// L1 Opera — red curtains part
+/// L1 Rooftop — sci-fi blast doors part onto the run (Opera curtains kept for legacy)
 /// L2 Museum — ornate doors open (museumdoor texture)
 /// L3 Club — underground neon door opens (undergroundoor texture)
 /// </summary>
@@ -94,12 +94,9 @@ public static class LevelCutscenePlayer
 
     static IEnumerator PlayRooftopDoor(GameObject root)
     {
-        var glow = CreatePanel(root.transform, "SunsetGlow", Vector2.zero, Vector2.one,
-            new Color(1f, 0.55f, 0.28f, 1f));
-        glow.transform.SetAsLastSibling();
-
-        var left  = CreateSteelDoor(root.transform, "DoorLeft",  handleOnRight: true);
-        var right = CreateSteelDoor(root.transform, "DoorRight", handleOnRight: false);
+        // Sci-fi blast doors over the live scene: title card, unlock, doors part onto the run.
+        var left  = CreateBlastDoor(root.transform, "DoorLeft",  seamOnRight: true,  out var leftLight,  out var leftSeam);
+        var right = CreateBlastDoor(root.transform, "DoorRight", seamOnRight: false, out var rightLight, out var rightSeam);
         var leftRt  = left.GetComponent<RectTransform>();
         var rightRt = right.GetComponent<RectTransform>();
         leftRt.anchorMin  = new Vector2(0f, 0f);   leftRt.anchorMax  = new Vector2(0.5f, 1f);
@@ -110,27 +107,99 @@ public static class LevelCutscenePlayer
         yield return new WaitForSecondsRealtime(1.1f);
         yield return FadeOutGraphics(title.GetComponentsInChildren<Graphic>(), 0.25f);
 
-        yield return AnimateAnchors(leftRt,  new Vector2(0f, 0f),   new Vector2(-0.5f, 0f), 0.8f);
-        yield return AnimateAnchors(rightRt, new Vector2(0.5f, 0f), new Vector2(1f, 0f),    0.8f);
-        yield return FadeOut(root, 0.4f);
+        // Unlock: status lights go green, the seam flares and the doors jolt.
+        var green = new Color(0.25f, 1f, 0.45f, 1f);
+        leftLight.color = rightLight.color = green;
+        for (float t = 0f; t < 0.35f; t += Time.unscaledDeltaTime)
+        {
+            float k = t / 0.35f;
+            var seam = new Color(0.55f, 0.95f, 1f, Mathf.Lerp(0.6f, 1f, k));
+            leftSeam.color = rightSeam.color = seam;
+            float jolt = Mathf.Sin(t * 90f) * 4f * (1f - k);
+            leftRt.anchoredPosition = new Vector2(-jolt, 0f);
+            rightRt.anchorMin = new Vector2(0.5f, 0f);
+            rightRt.anchoredPosition = new Vector2(jolt, 0f);
+            yield return null;
+        }
+        leftRt.anchoredPosition = rightRt.anchoredPosition = Vector2.zero;
+
+        // Reveal the scene behind the doors and part them together.
+        var blocker = root.transform.Find("Blocker");
+        if (blocker != null) blocker.gameObject.SetActive(false);
+        var flash = CreatePanel(root.transform, "OpenFlash", new Vector2(0.4f, 0f), new Vector2(0.6f, 1f), new Color(0.6f, 0.95f, 1f, 0.55f));
+        var flashImg = flash.GetComponent<Image>();
+
+        const float openTime = 0.75f;
+        for (float t = 0f; t < openTime; t += Time.unscaledDeltaTime)
+        {
+            float k = t / openTime;
+            float ease = k * k * (3f - 2f * k);
+            leftRt.anchorMin  = new Vector2(-0.5f * ease, 0f);
+            leftRt.anchorMax  = new Vector2(0.5f - 0.5f * ease, 1f);
+            rightRt.anchorMin = new Vector2(0.5f + 0.5f * ease, 0f);
+            rightRt.anchorMax = new Vector2(1f + 0.5f * ease, 1f);
+            var rt = flash.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f - 0.5f * ease, 0f);
+            rt.anchorMax = new Vector2(0.5f + 0.5f * ease, 1f);
+            flashImg.color = new Color(0.6f, 0.95f, 1f, 0.55f * (1f - k));
+            yield return null;
+        }
+        Object.Destroy(flash);
     }
 
-    static GameObject CreateSteelDoor(Transform parent, string name, bool handleOnRight)
+    static GameObject CreateBlastDoor(Transform parent, string name, bool seamOnRight, out Image statusLight, out Image seamGlow)
     {
-        var door = CreatePanel(parent, name, Vector2.zero, Vector2.one, new Color(0.42f, 0.44f, 0.47f, 1f));
+        var door = CreatePanel(parent, name, Vector2.zero, Vector2.one, new Color(0.08f, 0.09f, 0.11f, 1f));
 
-        CreatePanel(door.transform, "Edge", new Vector2(0f, 0f), new Vector2(1f, 1f),
-            new Color(0.28f, 0.29f, 0.31f, 1f));
-        CreatePanel(door.transform, "Face", new Vector2(0.03f, 0.02f), new Vector2(0.97f, 0.98f),
-            new Color(0.5f, 0.52f, 0.55f, 1f));
-        CreatePanel(door.transform, "PanelTop", new Vector2(0.12f, 0.56f), new Vector2(0.88f, 0.9f),
-            new Color(0.45f, 0.47f, 0.5f, 1f));
-        CreatePanel(door.transform, "PanelBottom", new Vector2(0.12f, 0.1f), new Vector2(0.88f, 0.44f),
-            new Color(0.45f, 0.47f, 0.5f, 1f));
+        // Inset face with horizontal ribs.
+        var face = CreatePanel(door.transform, "Face", new Vector2(0.025f, 0.025f), new Vector2(0.975f, 0.975f),
+            new Color(0.15f, 0.16f, 0.2f, 1f));
+        for (int i = 1; i <= 6; i++)
+        {
+            float y = 0.2f + i * 0.1f;
+            CreatePanel(face.transform, "Rib", new Vector2(0.04f, y), new Vector2(0.96f, y + 0.012f), new Color(0.09f, 0.1f, 0.12f, 1f));
+            CreatePanel(face.transform, "RibLight", new Vector2(0.04f, y + 0.012f), new Vector2(0.96f, y + 0.016f), new Color(0.26f, 0.28f, 0.33f, 1f));
+        }
 
-        float hx = handleOnRight ? 0.84f : 0.08f;
-        CreatePanel(door.transform, "Handle", new Vector2(hx, 0.46f), new Vector2(hx + 0.08f, 0.54f),
-            new Color(0.2f, 0.21f, 0.22f, 1f));
+        // Yellow/black hazard band across the bottom.
+        var band = CreatePanel(face.transform, "Hazard", new Vector2(0f, 0.05f), new Vector2(1f, 0.15f), new Color(0.95f, 0.72f, 0.1f, 1f));
+        band.AddComponent<RectMask2D>();
+        const int stripes = 22;
+        for (int i = -1; i <= stripes; i++)
+        {
+            var stripe = CreatePanel(band.transform, "Stripe", new Vector2((i + 0.5f) / stripes, 0.5f), new Vector2((i + 0.5f) / stripes, 0.5f),
+                new Color(0.06f, 0.06f, 0.07f, 1f));
+            var srt = stripe.GetComponent<RectTransform>();
+            srt.sizeDelta = new Vector2(20f, 260f);
+            srt.localEulerAngles = new Vector3(0f, 0f, seamOnRight ? -38f : 38f);
+        }
+
+        // Stencilled label, using the Sci-Fi GUI font when available.
+        var label = new GameObject("Label");
+        label.transform.SetParent(face.transform, false);
+        var lrt = label.AddComponent<RectTransform>();
+        lrt.anchorMin = new Vector2(0.08f, 0.86f);
+        lrt.anchorMax = new Vector2(0.92f, 0.95f);
+        lrt.offsetMin = lrt.offsetMax = Vector2.zero;
+        var tmp = label.AddComponent<TextMeshProUGUI>();
+        var skin = HudSkin.Get();
+        if (skin != null && skin.font != null) tmp.font = skin.font;
+        tmp.text = seamOnRight ? "ROOF ACCESS" : "SECTOR 01";
+        tmp.fontSize = 34f;
+        tmp.characterSpacing = 14f;
+        tmp.color = new Color(0.5f, 0.55f, 0.62f, 1f);
+        tmp.alignment = seamOnRight ? TextAlignmentOptions.Left : TextAlignmentOptions.Right;
+        tmp.raycastTarget = false;
+
+        // Cyan light strip along the seam and a status light beside it.
+        float seamMin = seamOnRight ? 0.982f : 0f;
+        float seamMax = seamOnRight ? 1f : 0.018f;
+        seamGlow = CreatePanel(door.transform, "SeamGlow", new Vector2(seamMin, 0f), new Vector2(seamMax, 1f),
+            new Color(0.35f, 0.85f, 1f, 0.6f)).GetComponent<Image>();
+        float lx = seamOnRight ? 0.9f : 0.06f;
+        CreatePanel(door.transform, "LightHousing", new Vector2(lx - 0.008f, 0.465f), new Vector2(lx + 0.048f, 0.535f), new Color(0.05f, 0.05f, 0.06f, 1f));
+        statusLight = CreatePanel(door.transform, "StatusLight", new Vector2(lx, 0.475f), new Vector2(lx + 0.04f, 0.525f),
+            new Color(1f, 0.2f, 0.15f, 1f)).GetComponent<Image>();
         return door;
     }
 
@@ -177,6 +246,7 @@ public static class LevelCutscenePlayer
         var bg = card.AddComponent<Image>();
         bg.color = new Color(0f, 0f, 0f, 0.5f);
         bg.raycastTarget = false;
+        SkinCard(bg);
 
         AddTitleText(card.transform, line, fontSize: 52, yAnchorMin: 0.1f, yAnchorMax: 0.9f,
             color: new Color(1f, 0.92f, 0.55f, 1f));
@@ -192,16 +262,28 @@ public static class LevelCutscenePlayer
         cardRt.anchorMax = new Vector2(0.85f, 0.65f);
         cardRt.offsetMin = cardRt.offsetMax = Vector2.zero;
 
-        // Semi-transparent dark band behind the text
+        // Sci-Fi GUI window behind the text (dark band if the skin is missing)
         var bg = card.AddComponent<Image>();
         bg.color = new Color(0f, 0f, 0f, 0.55f);
         bg.raycastTarget = false;
+        bool skinned = SkinCard(bg);
 
-        AddTitleText(card.transform, levelLine,   fontSize: 80, yAnchorMin: 0.52f, yAnchorMax: 0.95f,
-                     color: new Color(1f, 0.92f, 0.55f, 1f));  // gold
-        AddTitleText(card.transform, subtitleLine, fontSize: 44, yAnchorMin: 0.05f, yAnchorMax: 0.48f,
-                     color: new Color(1f, 1f, 1f, 1f));
+        AddTitleText(card.transform, levelLine,   fontSize: 80, yAnchorMin: 0.5f, yAnchorMax: 0.9f,
+                     color: skinned ? HudSkin.Cyan : new Color(1f, 0.92f, 0.55f, 1f));
+        AddTitleText(card.transform, subtitleLine, fontSize: 44, yAnchorMin: 0.12f, yAnchorMax: 0.48f,
+                     color: skinned ? new Color(1f, 0.85f, 0.4f, 1f) : Color.white);
         return card;
+    }
+
+    static bool SkinCard(Image bg)
+    {
+        var skin = HudSkin.Get();
+        if (skin == null || skin.window == null) return false;
+        bg.sprite = skin.window;
+        bg.type = Image.Type.Sliced;
+        bg.pixelsPerUnitMultiplier = 2f;
+        bg.color = Color.white;
+        return true;
     }
 
     static void AddTitleText(Transform parent, string text, int fontSize,
@@ -215,9 +297,15 @@ public static class LevelCutscenePlayer
         rt.offsetMin = rt.offsetMax = Vector2.zero;
 
         var tmp = go.AddComponent<TextMeshProUGUI>();
+        var skin = HudSkin.Get();
+        if (skin != null && skin.font != null)
+        {
+            tmp.font = skin.font;
+            tmp.characterSpacing = 12f;
+        }
         tmp.text      = text;
         tmp.fontSize  = fontSize;
-        tmp.fontStyle = FontStyles.Bold;
+        tmp.fontStyle = skin != null && skin.font != null ? FontStyles.Normal : FontStyles.Bold;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color     = color;
     }
