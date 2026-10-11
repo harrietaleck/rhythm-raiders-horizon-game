@@ -312,6 +312,11 @@ public class NarrationManager : MonoBehaviour
     public void Advance()
     {
         if (_lines == null) return;
+        if (_index >= _lines.Length)
+        {
+            Finish();
+            return;
+        }
 
         if (!_lineComplete)
         {
