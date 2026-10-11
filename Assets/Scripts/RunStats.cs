@@ -21,6 +21,7 @@ public static class RunStats
     public static int        Score              { get; set; }
     public static int        Stars              { get; set; }
     public static float      BestDistance       { get; set; }
+    public static bool       DailyCompleted     { get; set; }
 
     private static float _runStartTime = -1f;
 
@@ -115,8 +116,10 @@ public static class RunStats
         string stars = Stars > 0
             ? $"\n<color=#FFD54A>Rating: {Stars} / 3 stars</color>"
             : "";
+        string wallet = Notes > 0 ? $"\nNotes banked for the shop: {ShopData.Notes}" : "";
+        string daily = DailyCompleted ? "\n<color=#5AD9FF>Daily challenge complete!</color>" : "";
         return $"Artifacts: {ArtifactsCollected} / {PickupBase.ArtifactsToWin}\n" +
-               $"Value: ${ArtifactMoney:N0}{time}{run}{stars}";
+               $"Value: ${ArtifactMoney:N0}{time}{run}{stars}{wallet}{daily}";
     }
 
     public static string FormatRunSummaryLine()

@@ -79,6 +79,8 @@ public class RunDirector : MonoBehaviour
 
     int _notes;
     int _score;
+    int _stunts, _beatJumps, _bestMultiplier = 1;
+    bool _banked;
     float _lastHit = -10f;
     readonly List<float> _hazardRows = new List<float>();
 
@@ -89,7 +91,7 @@ public class RunDirector : MonoBehaviour
     GameObject _searchlight;
 
     // HUD
-    TextMeshProUGUI _distanceText, _fragmentText, _scoreText, _powerText, _popupText, _warningText, _beatLabel;
+    TextMeshProUGUI _distanceText, _fragmentText, _scoreText, _powerText, _popupText, _warningText, _beatLabel, _dailyText;
     RectTransform _beatPip;
     Image _beatImage;
     float _popupUntil;
@@ -108,6 +110,7 @@ public class RunDirector : MonoBehaviour
         PickupBase.PlayerHit -= OnPlayerHit;
         EnemyBase.SurgeWarned -= OnSurgeWarned;
         SaveBest();
+        BankNotes();
     }
 
     void Start()
@@ -119,6 +122,7 @@ public class RunDirector : MonoBehaviour
             _movement = go.GetComponent<PlayerMovement>();
             _pickup = go.GetComponent<PickupBase>();
             PlayerCarrier.For(go);
+            ShopData.ApplyTrail(go);
         }
         _enemy = FindAnyObjectByType<EnemyBase>();
         if (sun == null) sun = GameObject.Find("Directional Light")?.GetComponent<Light>();
@@ -129,6 +133,7 @@ public class RunDirector : MonoBehaviour
         RunStats.Notes = 0;
         RunStats.Score = 0;
         RunStats.Stars = 0;
+        RunStats.DailyCompleted = false;
         RunStats.BestDistance = PlayerPrefs.GetFloat(BestKey, 0f);
 
         BuildHud();
@@ -148,6 +153,13 @@ public class RunDirector : MonoBehaviour
             _baseForward = _movement != null ? _movement.baseForwardSpeed : 8f;
             _nextSearchlight = searchlightFrom;
             ShowPopup(districts[0].name, new Color(1f, 0.85f, 0.6f), 2.5f);
+
+            float headStart = ShopData.Bonus(ShopData.Upgrade.HeadStart);
+            if (headStart > 0f)
+            {
+                _bubbleUntil = Time.time + headStart;
+                if (_pickup != null) _pickup.invulnerableUntil = _bubbleUntil;
+            }
         }
 
         if (_finished) return;
@@ -158,6 +170,7 @@ public class RunDirector : MonoBehaviour
         UpdateCombo();
         UpdatePowers();
         UpdateSearchlight();
+        UpdateDaily();
         CheckFinish();
         UpdateHud();
     }
@@ -237,6 +250,7 @@ public class RunDirector : MonoBehaviour
             {
                 int before = Multiplier;
                 Combo++;
+                _bestMultiplier = Mathf.Max(_bestMultiplier, Multiplier);
                 if (Multiplier > before)
                     ShowPopup($"COMBO x{Multiplier}", new Color(0.35f, 0.85f, 1f), 1.2f);
             }
@@ -265,6 +279,8 @@ public class RunDirector : MonoBehaviour
         _score += 50 * Multiplier;
         RunStats.Score = _score;
         Combo++;
+        _stunts++;
+        _bestMultiplier = Mathf.Max(_bestMultiplier, Multiplier);
         ShowPopup(label, new Color(0.35f, 0.85f, 1f), 1.2f);
     }
 
@@ -288,6 +304,7 @@ public class RunDirector : MonoBehaviour
         if (_beatBoostUntil <= 0f)
             _movement.forwardSpeed += beatBoost;
         _beatBoostUntil = Time.time + 1.5f;
+        _beatJumps++;
         _score += 20 * Multiplier;
         RunStats.Score = _score;
         ShowPopup("ON BEAT!", new Color(1f, 0.85f, 0.25f), 0.8f);
@@ -300,19 +317,20 @@ public class RunDirector : MonoBehaviour
         switch (kind)
         {
             case PowerPickup.Kind.Magnet:
-                _magnetUntil = Time.time + magnetSeconds;
+                _magnetUntil = Time.time + magnetSeconds + ShopData.Bonus(ShopData.Upgrade.Magnet);
                 ShowPopup("MAGNET!", new Color(1f, 0.4f, 0.4f), 1.2f);
                 break;
             case PowerPickup.Kind.Bubble:
-                _bubbleUntil = Time.time + bubbleSeconds;
+                _bubbleUntil = Time.time + bubbleSeconds + ShopData.Bonus(ShopData.Upgrade.Bubble);
                 if (pickup != null) pickup.invulnerableUntil = _bubbleUntil;
                 ShowPopup("SHIELD BUBBLE!", new Color(0.35f, 0.85f, 1f), 1.2f);
                 break;
             case PowerPickup.Kind.SmokeBomb:
                 if (_enemy != null)
                 {
-                    _enemy.Stun(smokeSeconds);
-                    SpawnSmoke(_enemy.transform.position);
+                    float stun = smokeSeconds + ShopData.Bonus(ShopData.Upgrade.SmokeBomb);
+                    _enemy.Stun(stun);
+                    SpawnSmoke(_enemy.transform.position, stun);
                 }
                 ShowPopup("SMOKE BOMB! GUARD STUNNED", new Color(0.8f, 0.8f, 0.85f), 1.5f);
                 break;
@@ -340,7 +358,7 @@ public class RunDirector : MonoBehaviour
             _bubbleFx.transform.localScale = Vector3.one * (2.5f + Mathf.Sin(Time.time * 6f) * 0.08f);
     }
 
-    void SpawnSmoke(Vector3 at)
+    void SpawnSmoke(Vector3 at, float seconds)
     {
         var root = new GameObject("Smoke");
         root.transform.position = at;
@@ -351,7 +369,7 @@ public class RunDirector : MonoBehaviour
                 Vector3.one * Random.Range(1.2f, 2f), RooftopProps.Mat(new Color(0.7f, 0.7f, 0.72f, 0.6f), 0f, true), false);
             puff.AddComponent<SmokePuff>();
         }
-        Destroy(root, smokeSeconds);
+        Destroy(root, seconds);
     }
 
     // ── Searchlight helicopter ───────────────────────────────────────────────
@@ -391,12 +409,37 @@ public class RunDirector : MonoBehaviour
             string key = "Stars_L" + LevelProgress.CurrentLevel;
             if (stars > PlayerPrefs.GetInt(key, 0)) PlayerPrefs.SetInt(key, stars);
             SaveBest();
+            BankNotes();
         }
         else if (_pickup.currentHealth <= 0)
         {
             _finished = true;
             SaveBest();
+            BankNotes();
         }
+    }
+
+    void UpdateDaily()
+    {
+        if (DailyChallenge.CompletedToday) return;
+        int progress = DailyChallenge.Progress(Distance, _notes, _stunts, _beatJumps, _bestMultiplier);
+        if (!DailyChallenge.TryComplete(progress)) return;
+        RunStats.DailyCompleted = true;
+        ShowPopup($"DAILY CHALLENGE COMPLETE!  +{DailyChallenge.RewardNotes} NOTES", new Color(0.35f, 0.85f, 1f), 2.5f);
+    }
+
+    void BankNotes()
+    {
+        if (_banked || !_started) return;
+        _banked = true;
+        ShopData.AddNotes(_notes);
+    }
+
+    string DailyLine()
+    {
+        if (DailyChallenge.CompletedToday) return "";
+        int progress = DailyChallenge.Progress(Distance, _notes, _stunts, _beatJumps, _bestMultiplier);
+        return $"DAILY: {DailyChallenge.Description.ToUpper()}  ({Mathf.Min(progress, DailyChallenge.Target)}/{DailyChallenge.Target})";
     }
 
     void SaveBest()
@@ -439,6 +482,7 @@ public class RunDirector : MonoBehaviour
         _beatImage.raycastTarget = false;
         _beatLabel = Text(canvasGo, "BeatLabel", new Vector2(0.35f, 0.095f), new Vector2(0.65f, 0.13f), 18, new Color(1f, 1f, 1f, 0.7f));
         _beatLabel.text = "JUMP ON THE BEAT";
+        _dailyText = Text(canvasGo, "Daily", new Vector2(0.25f, 0.135f), new Vector2(0.75f, 0.17f), 18, new Color(0.35f, 0.85f, 1f, 0.85f));
 
         foreach (var t in new[] { _warningText, _popupText }) t.text = "";
     }
@@ -475,7 +519,7 @@ public class RunDirector : MonoBehaviour
     {
         if (_distanceText == null) return;
         bool show = GameManager.GameStarted && !_finished;
-        foreach (var t in new[] { _distanceText, _fragmentText, _scoreText, _powerText, _beatLabel })
+        foreach (var t in new[] { _distanceText, _fragmentText, _scoreText, _powerText, _beatLabel, _dailyText })
             t.enabled = show;
         _beatImage.enabled = show;
 
@@ -488,6 +532,7 @@ public class RunDirector : MonoBehaviour
 
         _distanceText.text = $"{Distance:0} m";
         _fragmentText.text = FragmentLine();
+        _dailyText.text = DailyLine();
         _scoreText.text = $"NOTES {_notes}    SCORE {_score:N0}" + (Multiplier > 1 ? $"    <color=#5AD9FF>x{Multiplier}</color>" : "");
 
         var powers = new List<string>();
