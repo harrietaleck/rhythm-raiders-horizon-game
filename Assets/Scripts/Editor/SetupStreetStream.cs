@@ -81,7 +81,19 @@ public static class SetupStreetStream
         stream.segment = seg;
         stream.segmentStartZ = pathBounds.min.z;
         stream.segmentLength = pathBounds.size.z;
+        stream.advantages = FindAll("Health - Pickup", "Jump Boost  - Pickup", "Speed boost - Pickup", "Sneak - Pickup");
+        stream.hazards = FindAll("Random Obstacle - health Decrease", "Random Obstacle - health Decrease", "Slow down  - Obstacle");
+        var fragments = FindAll("BeatFragment_1", "BeatFragment_2");
+        stream.fragmentTemplate = fragments.Length > 0 ? fragments[0] : null;
+        foreach (var f in fragments) f.SetActive(false);
+        stream.fragmentDistances = new[] { 250f, 500f };
         EditorUtility.SetDirty(stream);
+
+        var director = root.GetComponent<RunDirector>() ?? root.AddComponent<RunDirector>();
+        director.stream = stream;
+        director.font = AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>("Assets/UI/Fonts/Zekton SDF.asset");
+        director.sun = GameObject.Find("Directional Light")?.GetComponent<Light>();
+        EditorUtility.SetDirty(director);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
@@ -93,6 +105,24 @@ public static class SetupStreetStream
         var list = new System.Collections.Generic.List<Transform>();
         foreach (Transform c in t) list.Add(c);
         return list;
+    }
+
+    static GameObject[] FindAll(params string[] names)
+    {
+        var all = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var result = new System.Collections.Generic.List<GameObject>();
+        foreach (var n in names)
+        {
+            foreach (var t in all)
+            {
+                if (t.name != n) continue;
+                result.Add(t.gameObject);
+                break;
+            }
+        }
+        if (result.Count < names.Length)
+            Debug.LogWarning($"[StreetStream] Found {result.Count}/{names.Length} templates for {string.Join(", ", names)}");
+        return result.ToArray();
     }
 
     static Transform FindChildStartingWith(Transform parent, string prefix)

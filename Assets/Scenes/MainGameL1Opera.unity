@@ -11305,7 +11305,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!54 &1439075284
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -13058,6 +13058,7 @@ MonoBehaviour:
   moneyPerArtifact: 500
   isSneaking: 0
   hitCounter: 10
+  invulnerableUntil: 0
 --- !u!114 &1564157129
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13421,7 +13422,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!54 &1649586790
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -16100,6 +16101,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1964407160}
   - component: {fileID: 1964407161}
+  - component: {fileID: 1964407162}
   m_Layer: 0
   m_Name: RooftopCourse
   m_TagString: Untagged
@@ -16141,6 +16143,73 @@ MonoBehaviour:
   segmentStartZ: 0
   lookAhead: 150
   keepBehind: 40
+  advantages:
+  - {fileID: 1890331684}
+  - {fileID: 1655605918}
+  - {fileID: 1989588881}
+  - {fileID: 1516128555}
+  hazards:
+  - {fileID: 385503133}
+  - {fileID: 385503133}
+  - {fileID: 533724259}
+  fragmentTemplate: {fileID: 1439075283}
+  fragmentDistances:
+  - 250
+  - 500
+  lanes:
+  - -4
+  - 0
+  - 4
+  rowSpacing: 14
+  safeStart: 35
+  hazardChanceStart: 0.45
+  hazardChanceMax: 0.75
+  rampDistance: 700
+  firstSpecial: 110
+--- !u!114 &1964407162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1964407159}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9115590ff4b1a8e4fa4e53f0e19fba42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunDirector
+  stream: {fileID: 1964407161}
+  font: {fileID: 11400000, guid: 78a46f381c4f2cc4f809961b9c12f0d9, type: 2}
+  sun: {fileID: 410087040}
+  rampEvery: 150
+  rampStep: 0.08
+  rampMax: 1.4
+  bpm: 110
+  beatWindow: 0.13
+  beatBoost: 2.5
+  magnetSeconds: 6
+  magnetRadius: 9
+  bubbleSeconds: 5
+  smokeSeconds: 3
+  searchlightFrom: 350
+  searchlightEvery: 22
+  notesForThirdStar: 40
+  districts:
+  - name: RESIDENTIAL ROOFTOPS
+    startDistance: 0
+    fog: {r: 0.85, g: 0.42, b: 0.28, a: 1}
+    sun: {r: 1, g: 0.55, b: 0.28, a: 1}
+    ambient: {r: 0.95, g: 0.48, b: 0.28, a: 1}
+  - name: NEON MARKET
+    startDistance: 300
+    fog: {r: 0.45, g: 0.2, b: 0.55, a: 1}
+    sun: {r: 0.85, g: 0.45, b: 1, a: 1}
+    ambient: {r: 0.6, g: 0.3, b: 0.75, a: 1}
+  - name: CONSTRUCTION ZONE
+    startDistance: 600
+    fog: {r: 0.6, g: 0.45, b: 0.3, a: 1}
+    sun: {r: 1, g: 0.72, b: 0.4, a: 1}
+    ambient: {r: 0.7, g: 0.52, b: 0.36, a: 1}
 --- !u!1 &1985496230
 GameObject:
   m_ObjectHideFlags: 0

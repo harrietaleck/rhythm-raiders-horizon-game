@@ -17,6 +17,11 @@ public static class RunStats
     public static float      RunTime            { get; private set; }
     public static DeathCause LastDeathCause     { get; private set; } = DeathCause.Unknown;
 
+    public static int        Notes              { get; set; }
+    public static int        Score              { get; set; }
+    public static int        Stars              { get; set; }
+    public static float      BestDistance       { get; set; }
+
     private static float _runStartTime = -1f;
 
     /// <summary>Call when gameplay actually begins (after countdown / cutscene).</summary>
@@ -104,8 +109,14 @@ public static class RunStats
     public static string FormatScoreSummary()
     {
         string time = RunTime > 0f ? $"\nTime: {FormatTime(RunTime)}" : "";
+        string run = Score > 0 || Notes > 0
+            ? $"\nNotes: {Notes}   Score: {Score:N0}\nDistance: {Distance:0}m   Best: {BestDistance:0}m"
+            : "";
+        string stars = Stars > 0
+            ? $"\n<color=#FFD54A>Rating: {Stars} / 3 stars</color>"
+            : "";
         return $"Artifacts: {ArtifactsCollected} / {PickupBase.ArtifactsToWin}\n" +
-               $"Value: ${ArtifactMoney:N0}{time}";
+               $"Value: ${ArtifactMoney:N0}{time}{run}{stars}";
     }
 
     public static string FormatRunSummaryLine()
