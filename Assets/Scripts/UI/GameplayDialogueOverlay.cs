@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Lightweight top-center gameplay subtitles. Does not open the narration panel.
+/// Lightweight gameplay subtitles in a comms panel on the left edge. Does not open the narration panel.
 /// </summary>
 public class GameplayDialogueOverlay : MonoBehaviour
 {
@@ -16,7 +16,12 @@ public class GameplayDialogueOverlay : MonoBehaviour
     GameObject _root;
     TextMeshProUGUI _speaker;
     TextMeshProUGUI _line;
+    RectTransform _panel;
+    CanvasGroup _group;
+    GameObject _speakerTab;
     Coroutine _hideRoutine;
+
+    const float SlideDistance = 640f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Bootstrap() => EnsureInstance();
@@ -47,48 +52,85 @@ public class GameplayDialogueOverlay : MonoBehaviour
 
         _root.AddComponent<GraphicRaycaster>();
 
-        var bar = new GameObject("Bar");
-        bar.transform.SetParent(_root.transform, false);
-        var barRt = bar.AddComponent<RectTransform>();
-        barRt.anchorMin = new Vector2(0.08f, 0.90f);
-        barRt.anchorMax = new Vector2(0.92f, 0.98f);
-        barRt.offsetMin = barRt.offsetMax = Vector2.zero;
+        var skin = HudSkin.Get();
 
-        var bg = bar.AddComponent<Image>();
-        bg.color = new Color(0.04f, 0.05f, 0.08f, 0.58f);
+        // Comms panel on the left edge, below the stats panel, clear of the running lane.
+        var panel = new GameObject("CommsPanel");
+        panel.transform.SetParent(_root.transform, false);
+        _panel = panel.AddComponent<RectTransform>();
+        _panel.anchorMin = new Vector2(0.012f, 0.40f);
+        _panel.anchorMax = new Vector2(0.30f, 0.60f);
+        _panel.offsetMin = _panel.offsetMax = Vector2.zero;
+        _group = panel.AddComponent<CanvasGroup>();
+        _group.blocksRaycasts = false;
+        _group.interactable = false;
+
+        var bg = panel.AddComponent<Image>();
         bg.raycastTarget = false;
+        if (skin != null && skin.window != null)
+        {
+            bg.sprite = skin.window;
+            bg.type = Image.Type.Sliced;
+            bg.pixelsPerUnitMultiplier = 3f;
+            bg.color = new Color(1f, 1f, 1f, 0.95f);
+        }
+        else
+        {
+            bg.color = new Color(0.02f, 0.04f, 0.09f, 0.82f);
+        }
 
-        var speakerGo = new GameObject("Speaker");
-        speakerGo.transform.SetParent(bar.transform, false);
-        var speakerRt = speakerGo.AddComponent<RectTransform>();
-        speakerRt.anchorMin = new Vector2(0.03f, 0.58f);
-        speakerRt.anchorMax = new Vector2(0.97f, 0.96f);
-        speakerRt.offsetMin = speakerRt.offsetMax = Vector2.zero;
+        // Speaker tab sitting on the panel's top edge.
+        var tab = new GameObject("SpeakerTab");
+        tab.transform.SetParent(panel.transform, false);
+        var tabRt = tab.AddComponent<RectTransform>();
+        tabRt.anchorMin = new Vector2(0.05f, 0.80f);
+        tabRt.anchorMax = new Vector2(0.62f, 1.06f);
+        tabRt.offsetMin = tabRt.offsetMax = Vector2.zero;
+        var tabImg = tab.AddComponent<Image>();
+        tabImg.raycastTarget = false;
+        if (skin != null && skin.banner != null)
+        {
+            tabImg.sprite = skin.banner;
+            tabImg.type = Image.Type.Sliced;
+            tabImg.pixelsPerUnitMultiplier = 5f;
+        }
+        else
+        {
+            tabImg.color = new Color(0.05f, 0.1f, 0.2f, 0.95f);
+        }
+        _speakerTab = tab;
 
-        _speaker = speakerGo.AddComponent<TextMeshProUGUI>();
-        TmpUiUtility.EnsureFont(_speaker);
-        _speaker.fontSize = 22f;
-        _speaker.fontStyle = FontStyles.Bold;
-        _speaker.color = new Color(1f, 0.86f, 0.35f, 1f);
-        _speaker.alignment = TextAlignmentOptions.Top;
-        _speaker.raycastTarget = false;
+        _speaker = MakeText(tab.transform, "Speaker", new Vector2(0.06f, 0f), new Vector2(0.94f, 1f), 20f, HudSkin.Cyan, skin);
+        _speaker.alignment = TextAlignmentOptions.Center;
+        _speaker.characterSpacing = 5f;
+        _speaker.fontStyle = FontStyles.UpperCase;
 
-        var lineGo = new GameObject("Line");
-        lineGo.transform.SetParent(bar.transform, false);
-        var lineRt = lineGo.AddComponent<RectTransform>();
-        lineRt.anchorMin = new Vector2(0.03f, 0.08f);
-        lineRt.anchorMax = new Vector2(0.97f, 0.62f);
-        lineRt.offsetMin = lineRt.offsetMax = Vector2.zero;
-
-        _line = lineGo.AddComponent<TextMeshProUGUI>();
-        TmpUiUtility.EnsureFont(_line);
-        _line.fontSize = 28f;
-        _line.color = Color.white;
-        _line.alignment = TextAlignmentOptions.Center;
+        _line = MakeText(panel.transform, "Line", new Vector2(0.07f, 0.1f), new Vector2(0.94f, 0.78f), 24f, Color.white, skin);
+        _line.alignment = TextAlignmentOptions.TopLeft;
         _line.textWrappingMode = TextWrappingModes.Normal;
-        _line.raycastTarget = false;
+        _line.enableAutoSizing = true;
+        _line.fontSizeMin = 16f;
+        _line.fontSizeMax = 24f;
+        _line.lineSpacing = 4f;
 
         _root.SetActive(false);
+    }
+
+    static TextMeshProUGUI MakeText(Transform parent, string name, Vector2 min, Vector2 max, float size, Color color, HudSkin skin)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var rt = go.AddComponent<RectTransform>();
+        rt.anchorMin = min;
+        rt.anchorMax = max;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+        var tmp = go.AddComponent<TextMeshProUGUI>();
+        if (skin != null && skin.font != null) tmp.font = skin.font;
+        else TmpUiUtility.EnsureFont(tmp);
+        tmp.fontSize = size;
+        tmp.color = color;
+        tmp.raycastTarget = false;
+        return tmp;
     }
 
     public static void Show(string text, string speaker, float duration = DefaultDuration)
@@ -114,17 +156,14 @@ public class GameplayDialogueOverlay : MonoBehaviour
         }
 
         bool hasSpeaker = !string.IsNullOrWhiteSpace(speaker);
-        if (_speaker != null)
-        {
-            _speaker.gameObject.SetActive(hasSpeaker);
-            if (hasSpeaker)
-                TmpUiUtility.SetSafeText(_speaker, speaker);
-        }
+        if (_speakerTab != null) _speakerTab.SetActive(hasSpeaker);
+        if (hasSpeaker && _speaker != null)
+            TmpUiUtility.SetSafeText(_speaker, speaker);
 
         TmpUiUtility.SetSafeText(_line, text ?? string.Empty);
         _root.SetActive(true);
 
-        _hideRoutine = StartCoroutine(HideAfter(Mathf.Max(1.2f, duration)));
+        _hideRoutine = StartCoroutine(ShowThenHide(Mathf.Max(1.2f, duration)));
     }
 
     void HideInternal()
@@ -139,9 +178,27 @@ public class GameplayDialogueOverlay : MonoBehaviour
             _root.SetActive(false);
     }
 
-    IEnumerator HideAfter(float seconds)
+    IEnumerator ShowThenHide(float seconds)
     {
+        yield return Slide(0f, 1f, 0.22f);
         yield return new WaitForSecondsRealtime(seconds);
+        yield return Slide(1f, 0f, 0.2f);
         HideInternal();
+    }
+
+    IEnumerator Slide(float from, float to, float time)
+    {
+        for (float t = 0f; t < time; t += Time.unscaledDeltaTime)
+        {
+            SetVisible(Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, t / time)));
+            yield return null;
+        }
+        SetVisible(to);
+    }
+
+    void SetVisible(float k)
+    {
+        if (_group != null) _group.alpha = k;
+        if (_panel != null) _panel.anchoredPosition = new Vector2(-SlideDistance * (1f - k), 0f);
     }
 }

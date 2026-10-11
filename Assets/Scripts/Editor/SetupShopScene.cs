@@ -118,6 +118,21 @@ public static class SetupShopScene
     [MenuItem("Tools/Debug/Open Level 3 (Play Mode)")]
     static void OpenLevel3() => OpenLevel(3);
 
+    [MenuItem("Tools/Debug/Preview HUD Callouts (Play Mode)")]
+    static void PreviewCallouts()
+    {
+        if (!Application.isPlaying) return;
+        GameplayDialogueOverlay.Show("Two artifacts hidden across the rooftops. Keep moving, Pulse!", "Narrator", 6f);
+        RunDirector.Instance?.Flash("GAP AHEAD - JUMP!", new Color(1f, 0.45f, 0.1f), 6f);
+    }
+
+    [MenuItem("Tools/Debug/Trigger Smoke Bomb (Play Mode)")]
+    static void TriggerSmokeBomb()
+    {
+        if (!Application.isPlaying || RunDirector.Instance == null) return;
+        RunDirector.Instance.ApplyPower(PowerPickup.Kind.SmokeBomb, null);
+    }
+
     static void OpenLevel(int level)
     {
         if (!Application.isPlaying) return;

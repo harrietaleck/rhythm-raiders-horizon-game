@@ -24,6 +24,10 @@ public class RunDirector : MonoBehaviour
     [Header("References")]
     public StreetRunStream stream;
     public TMP_FontAsset font;
+    [Tooltip("Sci-Fi GUI skin window (sliced) behind the run stats.")]
+    public Sprite panelSprite;
+    [Tooltip("Sci-Fi GUI skin button plate (sliced) behind callouts.")]
+    public Sprite bannerSprite;
     public Light sun;
 
     [Header("Speed ramp")]
@@ -99,7 +103,13 @@ public class RunDirector : MonoBehaviour
     TextMeshProUGUI _distanceText, _fragmentText, _scoreText, _powerText, _popupText, _warningText, _beatLabel, _dailyText;
     RectTransform _beatPip;
     Image _beatImage;
+    Image _statsPlate, _dailyPlate, _popupPlate, _warningPlate;
     float _popupUntil;
+    float _popupShownAt;
+    bool _warnWasOn;
+    float _warnShownAt;
+    RectTransform _popupGroup, _warningGroup;
+    Image _powerPlate;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() => Instance = null;
@@ -321,6 +331,7 @@ public class RunDirector : MonoBehaviour
     }
 
     public void Flash(string label, Color color) => ShowPopup(label, color, 0.9f);
+    public void Flash(string label, Color color, float seconds) => ShowPopup(label, color, seconds);
 
     // ── Rhythm jumps ─────────────────────────────────────────────────────────
 
@@ -362,6 +373,8 @@ public class RunDirector : MonoBehaviour
                 ShowPopup("SHIELD BUBBLE!", new Color(0.35f, 0.85f, 1f), 1.2f);
                 break;
             case PowerPickup.Kind.SmokeBomb:
+                if (_player != null)
+                    SpawnSmoke(_player.position, 1.8f, 22, 1.1f, _player, 0.5f, 1.1f);
                 if (_enemy != null)
                 {
                     float stun = smokeSeconds + ShopData.Bonus(ShopData.Upgrade.SmokeBomb);
@@ -394,16 +407,19 @@ public class RunDirector : MonoBehaviour
             _bubbleFx.transform.localScale = Vector3.one * (2.5f + Mathf.Sin(Time.time * 6f) * 0.08f);
     }
 
-    void SpawnSmoke(Vector3 at, float seconds)
+    void SpawnSmoke(Vector3 at, float seconds, int puffs = 7, float spread = 1f, Transform follow = null,
+                    float minSize = 1.2f, float maxSize = 2.2f)
     {
         var root = new GameObject("Smoke");
         root.transform.position = at;
-        for (int i = 0; i < 7; i++)
+        if (follow != null) root.transform.SetParent(follow, true);
+        var mat = RooftopProps.Glow(new Color(0.78f, 0.78f, 0.82f, 0.32f));
+        for (int i = 0; i < puffs; i++)
         {
             var puff = RooftopProps.Part(PrimitiveType.Sphere, root.transform,
-                new Vector3(Random.Range(-1f, 1f), Random.Range(0.3f, 2f), Random.Range(-1f, 1f)),
-                Vector3.one * Random.Range(1.2f, 2f), RooftopProps.Mat(new Color(0.7f, 0.7f, 0.72f, 0.6f), 0f, true), false);
-            puff.AddComponent<SmokePuff>();
+                new Vector3(Random.Range(-spread, spread), Random.Range(0.1f, 1.6f), Random.Range(-spread, spread)),
+                Vector3.one * Random.Range(minSize, maxSize), mat, false);
+            puff.AddComponent<SmokePuff>().life = seconds;
         }
         Destroy(root, seconds);
     }
@@ -491,6 +507,14 @@ public class RunDirector : MonoBehaviour
 
     void BuildHud()
     {
+        var skin = HudSkin.Get();
+        if (skin != null)
+        {
+            if (panelSprite == null) panelSprite = skin.window;
+            if (bannerSprite == null) bannerSprite = skin.banner;
+            if (font == null) font = skin.font;
+        }
+
         var canvasGo = new GameObject("RunHUD", typeof(RectTransform));
         canvasGo.transform.SetParent(transform, false);
         var canvas = canvasGo.AddComponent<Canvas>();
@@ -501,26 +525,83 @@ public class RunDirector : MonoBehaviour
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight = 0.5f;
 
-        _distanceText = Text(canvasGo, "Distance", new Vector2(0.35f, 0.905f), new Vector2(0.65f, 0.985f), 46, Color.white);
-        _fragmentText = Text(canvasGo, "Fragment", new Vector2(0.3f, 0.865f), new Vector2(0.7f, 0.91f), 26, new Color(0.35f, 0.85f, 1f));
-        _scoreText = Text(canvasGo, "Score", new Vector2(0.3f, 0.825f), new Vector2(0.7f, 0.865f), 24, new Color(1f, 0.85f, 0.35f));
-        _powerText = Text(canvasGo, "Powers", new Vector2(0.3f, 0.79f), new Vector2(0.7f, 0.825f), 22, new Color(0.8f, 0.95f, 1f));
-        _warningText = Text(canvasGo, "Warning", new Vector2(0.2f, 0.66f), new Vector2(0.8f, 0.76f), 60, new Color(1f, 0.25f, 0.2f));
-        _popupText = Text(canvasGo, "Popup", new Vector2(0.15f, 0.56f), new Vector2(0.85f, 0.66f), 48, Color.white);
+        _statsPlate = Plate(canvasGo, "StatsPlate", new Vector2(0.36f, 0.835f), new Vector2(0.64f, 0.99f), panelSprite, 2.5f, new Color(1f, 1f, 1f, 0.92f));
+        _dailyPlate = Plate(canvasGo, "DailyPlate", new Vector2(0.33f, 0.035f), new Vector2(0.67f, 0.12f), panelSprite, 4f, new Color(1f, 1f, 1f, 0.8f));
+
+        // Right-hand callout column under the level panel: powers, then callouts, then guard warnings.
+        _powerPlate = Plate(canvasGo, "PowerPlate", new Vector2(0.75f, 0.70f), new Vector2(0.985f, 0.76f), panelSprite, 4f, new Color(1f, 1f, 1f, 0.85f));
+        _popupGroup = Group(canvasGo, "CalloutGroup", new Vector2(0.70f, 0.60f), new Vector2(0.985f, 0.685f));
+        _popupPlate = Plate(_popupGroup.gameObject, "PopupPlate", Vector2.zero, Vector2.one, bannerSprite, 4f, Color.white);
+        _warningGroup = Group(canvasGo, "WarningGroup", new Vector2(0.70f, 0.505f), new Vector2(0.985f, 0.59f));
+        _warningPlate = Plate(_warningGroup.gameObject, "WarningPlate", Vector2.zero, Vector2.one, bannerSprite, 4f, new Color(1f, 0.45f, 0.45f, 1f));
+
+        _distanceText = Text(canvasGo, "Distance", new Vector2(0.38f, 0.925f), new Vector2(0.62f, 0.98f), 40, SciFiCyanWhite);
+        _fragmentText = Text(canvasGo, "Fragment", new Vector2(0.38f, 0.89f), new Vector2(0.62f, 0.925f), 22, new Color(0.35f, 0.85f, 1f));
+        _scoreText = Text(canvasGo, "Score", new Vector2(0.38f, 0.86f), new Vector2(0.62f, 0.89f), 20, new Color(1f, 0.85f, 0.35f));
+        _powerText = Text(canvasGo, "Powers", new Vector2(0.765f, 0.705f), new Vector2(0.97f, 0.755f), 20, new Color(0.8f, 0.95f, 1f));
+        _powerText.enableAutoSizing = true;
+        _powerText.fontSizeMin = 12f;
+        _powerText.fontSizeMax = 20f;
+        _warningText = Text(_warningGroup.gameObject, "Warning", new Vector2(0.08f, 0.1f), new Vector2(0.92f, 0.9f), 34, new Color(1f, 0.35f, 0.3f));
+        _popupText = Text(_popupGroup.gameObject, "Popup", new Vector2(0.08f, 0.1f), new Vector2(0.92f, 0.9f), 30, Color.white);
+        foreach (var t in new[] { _warningText, _popupText })
+        {
+            t.enableAutoSizing = true;
+            t.fontSizeMin = 18f;
+            t.fontSizeMax = t.fontSize;
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+        }
 
         var pipGo = new GameObject("BeatPip", typeof(RectTransform));
         pipGo.transform.SetParent(canvasGo.transform, false);
         _beatPip = pipGo.GetComponent<RectTransform>();
-        _beatPip.anchorMin = _beatPip.anchorMax = new Vector2(0.5f, 0.07f);
+        _beatPip.anchorMin = _beatPip.anchorMax = new Vector2(0.5f, 0.145f);
         _beatPip.sizeDelta = new Vector2(26f, 26f);
         _beatPip.localEulerAngles = new Vector3(0, 0, 45f);
         _beatImage = pipGo.AddComponent<Image>();
         _beatImage.raycastTarget = false;
-        _beatLabel = Text(canvasGo, "BeatLabel", new Vector2(0.35f, 0.095f), new Vector2(0.65f, 0.13f), 18, new Color(1f, 1f, 1f, 0.7f));
+        _beatLabel = Text(canvasGo, "BeatLabel", new Vector2(0.35f, 0.045f), new Vector2(0.65f, 0.075f), 16, new Color(1f, 1f, 1f, 0.75f));
         _beatLabel.text = "JUMP ON THE BEAT";
-        _dailyText = Text(canvasGo, "Daily", new Vector2(0.25f, 0.135f), new Vector2(0.75f, 0.17f), 18, new Color(0.35f, 0.85f, 1f, 0.85f));
+        _dailyText = Text(canvasGo, "Daily", new Vector2(0.35f, 0.075f), new Vector2(0.65f, 0.11f), 18, new Color(0.35f, 0.85f, 1f, 0.95f));
 
         foreach (var t in new[] { _warningText, _popupText }) t.text = "";
+    }
+
+    static readonly Color SciFiCyanWhite = new Color(0.9f, 0.97f, 1f);
+
+    static RectTransform Group(GameObject parent, string name, Vector2 min, Vector2 max)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent.transform, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = min;
+        rt.anchorMax = max;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+        return rt;
+    }
+
+    Image Plate(GameObject parent, string name, Vector2 min, Vector2 max, Sprite sprite, float pixelsPerUnit, Color color)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent.transform, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = min;
+        rt.anchorMax = max;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+        var img = go.AddComponent<Image>();
+        img.raycastTarget = false;
+        if (sprite != null)
+        {
+            img.sprite = sprite;
+            img.type = Image.Type.Sliced;
+            img.pixelsPerUnitMultiplier = pixelsPerUnit;
+            img.color = color;
+        }
+        else
+        {
+            img.color = new Color(0.02f, 0.03f, 0.07f, 0.75f);
+        }
+        return img;
     }
 
     TextMeshProUGUI Text(GameObject parent, string name, Vector2 min, Vector2 max, float size, Color color)
@@ -538,8 +619,8 @@ public class RunDirector : MonoBehaviour
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.raycastTarget = false;
         tmp.characterSpacing = 4f;
-        tmp.outlineWidth = 0.18f;
-        tmp.outlineColor = new Color32(0, 0, 0, 200);
+        tmp.outlineWidth = 0.12f;
+        tmp.outlineColor = new Color32(0, 10, 25, 220);
         return tmp;
     }
 
@@ -549,6 +630,7 @@ public class RunDirector : MonoBehaviour
         _popupText.text = text;
         _popupText.color = color;
         _popupUntil = Time.time + seconds;
+        _popupShownAt = Time.time;
     }
 
     void UpdateHud()
@@ -558,11 +640,14 @@ public class RunDirector : MonoBehaviour
         foreach (var t in new[] { _distanceText, _fragmentText, _scoreText, _powerText, _beatLabel, _dailyText })
             t.enabled = show;
         _beatImage.enabled = show;
+        _statsPlate.enabled = show;
+        _dailyPlate.enabled = show;
 
         if (!show)
         {
             _warningText.text = "";
             _popupText.text = "";
+            _warningPlate.enabled = _popupPlate.enabled = _powerPlate.enabled = false;
             return;
         }
 
@@ -572,11 +657,12 @@ public class RunDirector : MonoBehaviour
         _scoreText.text = $"NOTES {_notes}    SCORE {_score:N0}" + (Multiplier > 1 ? $"    <color=#5AD9FF>x{Multiplier}</color>" : "");
 
         var powers = new List<string>();
-        if (MagnetActive) powers.Add($"MAGNET {_magnetUntil - Time.time:0}s");
-        if (Time.time < _bubbleUntil) powers.Add($"BUBBLE {_bubbleUntil - Time.time:0}s");
+        if (MagnetActive) powers.Add($"MAGNET {Mathf.CeilToInt(_magnetUntil - Time.time)}s");
+        if (Time.time < _bubbleUntil) powers.Add($"BUBBLE {Mathf.CeilToInt(_bubbleUntil - Time.time)}s");
         if (_enemy != null && _enemy.IsStunned) powers.Add("GUARD STUNNED");
-        if (_pickup != null && _pickup.isSneaking) powers.Add($"SNEAK {_pickup.SneakTimeLeft:0}s");
-        _powerText.text = string.Join("    ", powers);
+        if (_pickup != null && _pickup.isSneaking) powers.Add($"SNEAK {Mathf.CeilToInt(_pickup.SneakTimeLeft)}s");
+        _powerText.text = string.Join("   ", powers);
+        _powerPlate.enabled = powers.Count > 0;
 
         bool warn = Time.time < _guardWarnUntil || (_enemy != null && (_enemy.IsWarning || _enemy.IsSurging));
         _warningText.text = warn && Mathf.Repeat(Time.time * 4f, 1f) > 0.35f
@@ -586,11 +672,25 @@ public class RunDirector : MonoBehaviour
         float a = Time.time < _popupUntil ? Mathf.Clamp01((_popupUntil - Time.time) * 3f) : 0f;
         var c = _popupText.color;
         _popupText.color = new Color(c.r, c.g, c.b, a);
+        _popupPlate.enabled = a > 0.01f && _popupText.text.Length > 0;
+        var pc = _popupPlate.color;
+        _popupPlate.color = new Color(pc.r, pc.g, pc.b, a);
+        _warningPlate.enabled = warn;
+        if (warn && !_warnWasOn) _warnShownAt = Time.time;
+        _warnWasOn = warn;
+        SlideIn(_popupGroup, _popupShownAt);
+        SlideIn(_warningGroup, _warnShownAt);
 
         float phase = BeatPhase();
         float pulse = 1f - Mathf.Clamp01(Mathf.Min(phase, 1f - phase) * 6f);
         _beatPip.sizeDelta = Vector2.one * (22f + pulse * 22f);
         _beatImage.color = Color.Lerp(new Color(1f, 1f, 1f, 0.35f), new Color(1f, 0.85f, 0.25f, 1f), pulse);
+    }
+
+    static void SlideIn(RectTransform group, float shownAt)
+    {
+        float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((Time.time - shownAt) * 6f));
+        group.anchoredPosition = new Vector2(480f * (1f - k), 0f);
     }
 
     string FragmentLine()
