@@ -214,7 +214,7 @@ public class PianoPuzzle : MonoBehaviour
         field.fontSize = fontSize;
         field.fontStyle = FontStyles.Bold;
         field.alignment = TextAlignmentOptions.TopLeft;
-        field.enableWordWrapping = true;
+        field.textWrappingMode = TextWrappingModes.Normal;
         field.overflowMode = TextOverflowModes.Overflow;
         field.raycastTarget = false;
         field.color = Color.white;

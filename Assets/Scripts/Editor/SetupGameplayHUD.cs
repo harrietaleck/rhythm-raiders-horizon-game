@@ -237,7 +237,7 @@ public static class SetupGameplayHUD
         tmp.alignment           = align;
         tmp.text                = string.IsNullOrEmpty(label) ? "——" : label;
         tmp.raycastTarget       = false;
-        tmp.enableWordWrapping  = false;
+        tmp.textWrappingMode  = TextWrappingModes.NoWrap;
         tmp.overflowMode        = TextOverflowModes.Overflow;  // never clip label
         TmpUiUtility.EnsureFont(tmp);
 
