@@ -28,7 +28,7 @@ public static class SetupUndergroundDoorResource
         }
 
         if (AssetDatabase.LoadAssetAtPath<Texture2D>(Dst) != null)
-            AssetDatabase.DeleteAsset(Dst);
+            return;
 
         if (AssetDatabase.CopyAsset(Src, Dst))
         {
