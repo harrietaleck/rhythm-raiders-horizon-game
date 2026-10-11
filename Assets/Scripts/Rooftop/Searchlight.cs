@@ -47,16 +47,16 @@ public class Searchlight : MonoBehaviour
                                    RooftopProps.Mat(new Color(1f, 0.1f, 0.1f), 5f), false).transform;
 
         _beam = RooftopProps.Part(PrimitiveType.Cylinder, transform, Vector3.zero, Vector3.one,
-                                  RooftopProps.Mat(new Color(1f, 0.97f, 0.75f, 0.18f), 1.5f, true), false).transform;
+                                  RooftopProps.Glow(new Color(1f, 0.92f, 0.6f, 0.16f)), false).transform;
         _spot = RooftopProps.Part(PrimitiveType.Cylinder, transform, new Vector3(0f, _roofY + 0.04f, 0f),
                                   new Vector3(spotRadius * 2f, 0.02f, spotLength * 2f),
-                                  RooftopProps.Mat(new Color(1f, 0.97f, 0.7f, 0.55f), 2.5f, true), false).transform;
+                                  RooftopProps.Glow(new Color(1f, 0.9f, 0.55f, 0.5f)), false).transform;
 
         var light = _spot.gameObject.AddComponent<Light>();
         light.type = LightType.Point;
-        light.color = new Color(1f, 0.95f, 0.75f);
-        light.range = 7f;
-        light.intensity = 4f;
+        light.color = new Color(1f, 0.88f, 0.55f);
+        light.range = 9f;
+        light.intensity = 6f;
     }
 
     void Update()

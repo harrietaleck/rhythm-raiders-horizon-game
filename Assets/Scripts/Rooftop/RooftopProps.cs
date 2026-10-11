@@ -47,6 +47,28 @@ public static class RooftopProps
         return m;
     }
 
+    /// <summary>Unlit transparent glow; unaffected by sky reflections.</summary>
+    public static Material Glow(Color color)
+    {
+        string key = $"glow{color}";
+        if (Mats.TryGetValue(key, out var cached) && cached != null) return cached;
+
+        var shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader == null) return Mat(color, 2f, true);
+        var m = new Material(shader);
+        m.SetColor("_BaseColor", color);
+        m.SetFloat("_Surface", 1f);
+        m.SetFloat("_Blend", 0f);
+        m.SetOverrideTag("RenderType", "Transparent");
+        m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        m.SetInt("_ZWrite", 0);
+        m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        Mats[key] = m;
+        return m;
+    }
+
     // ── Primitive helpers ────────────────────────────────────────────────────
 
     public static GameObject Root(string name, Transform parent, Vector3 pos)

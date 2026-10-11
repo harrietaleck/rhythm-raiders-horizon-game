@@ -49,15 +49,20 @@ public class RunDirector : MonoBehaviour
     [Header("Stars")]
     public int notesForThirdStar = 40;
 
-    public District[] districts =
+    [System.NonSerialized] public District[] districts =
     {
         new District { name = "RESIDENTIAL ROOFTOPS", startDistance = 0f,
-            fog = new Color(0.85f, 0.42f, 0.28f), sun = new Color(1f, 0.55f, 0.28f), ambient = new Color(0.95f, 0.48f, 0.28f) },
+            fog = new Color(0.32f, 0.2f, 0.26f), sun = new Color(1f, 0.5f, 0.3f), ambient = new Color(0.34f, 0.24f, 0.32f) },
         new District { name = "NEON MARKET", startDistance = 300f,
-            fog = new Color(0.45f, 0.2f, 0.55f), sun = new Color(0.85f, 0.45f, 1f), ambient = new Color(0.6f, 0.3f, 0.75f) },
+            fog = new Color(0.18f, 0.12f, 0.26f), sun = new Color(0.7f, 0.42f, 0.9f), ambient = new Color(0.26f, 0.18f, 0.36f) },
         new District { name = "CONSTRUCTION ZONE", startDistance = 600f,
-            fog = new Color(0.6f, 0.45f, 0.3f), sun = new Color(1f, 0.72f, 0.4f), ambient = new Color(0.7f, 0.52f, 0.36f) },
+            fog = new Color(0.14f, 0.12f, 0.18f), sun = new Color(0.8f, 0.5f, 0.35f), ambient = new Color(0.22f, 0.18f, 0.24f) },
     };
+
+    [Header("Dusk")]
+    public float sunIntensity = 0.55f;
+    public float exposure = 0.55f;
+    public float postExposure = -0.9f;
 
     public float Distance { get; private set; }
     public int DistrictIndex { get; private set; }
@@ -126,6 +131,7 @@ public class RunDirector : MonoBehaviour
         }
         _enemy = FindAnyObjectByType<EnemyBase>();
         if (sun == null) sun = GameObject.Find("Directional Light")?.GetComponent<Light>();
+        ApplyDusk();
 
         PickupBase.PlayerHit += OnPlayerHit;
         EnemyBase.SurgeWarned += OnSurgeWarned;
@@ -221,7 +227,37 @@ public class RunDirector : MonoBehaviour
         float k = Time.deltaTime * 0.6f;
         RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor, d.fog, k);
         RenderSettings.ambientSkyColor = Color.Lerp(RenderSettings.ambientSkyColor, d.ambient, k);
+        RenderSettings.ambientLight = RenderSettings.ambientSkyColor;
         if (sun != null) sun.color = Color.Lerp(sun.color, d.sun, k);
+    }
+
+    void ApplyDusk()
+    {
+        var d = districts[0];
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+        RenderSettings.ambientLight = d.ambient;
+        RenderSettings.ambientSkyColor = d.ambient;
+        RenderSettings.fogColor = d.fog;
+        if (sun != null)
+        {
+            sun.color = d.sun;
+            sun.intensity = sunIntensity;
+        }
+        var volume = FindAnyObjectByType<UnityEngine.Rendering.Volume>();
+        if (volume != null && volume.sharedProfile != null)
+        {
+            var profile = Instantiate(volume.sharedProfile);
+            volume.profile = profile;
+            if (!profile.TryGet<UnityEngine.Rendering.Universal.ColorAdjustments>(out var color))
+                color = profile.Add<UnityEngine.Rendering.Universal.ColorAdjustments>(true);
+            color.postExposure.Override(postExposure);
+            color.colorFilter.Override(new Color(0.85f, 0.8f, 1f));
+        }
+        if (RenderSettings.skybox != null && RenderSettings.skybox.HasProperty("_Exposure"))
+        {
+            RenderSettings.skybox = new Material(RenderSettings.skybox);
+            RenderSettings.skybox.SetFloat("_Exposure", exposure);
+        }
     }
 
     public int DistrictAt(float distance)
