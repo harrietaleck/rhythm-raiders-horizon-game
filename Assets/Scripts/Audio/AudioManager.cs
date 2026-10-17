@@ -336,6 +336,35 @@ public class AudioManager : MonoBehaviour
     public void PlaySpeedPickupSfx() => PlayClipOrFallback(speedPickupSound, 1.35f, 0.8f);
     public void PlayJumpPickupSfx() => PlayClipOrFallback(jumpPickupSound, 1.22f, 0.75f);
     public void PlayObstacleHitSfx() => PlayClipOrFallback(obstacleHitSound, 0.55f, 0.85f);
+    static AudioClip _boom;
+
+    /// <summary>Procedural grenade blast: noise crack plus a low rumble, decaying over ~1 s.</summary>
+    public void PlayExplosionSfx()
+    {
+        if (_sfxSource == null) return;
+        if (_boom == null)
+        {
+            const int rate = 44100;
+            int n = (int)(rate * 1.1f);
+            var data = new float[n];
+            float lp = 0f;
+            var rng = new System.Random(7);
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)rate;
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                lp += (noise - lp) * Mathf.Lerp(0.6f, 0.04f, Mathf.Clamp01(t / 0.25f));   // bright crack, then muffled
+                float rumble = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(70f, 38f, t) * t);
+                float env = Mathf.Exp(-t * 4.2f) * Mathf.Clamp01(t * 400f);
+                data[i] = Mathf.Clamp((lp * 1.6f + rumble * 0.55f) * env, -1f, 1f);
+            }
+            _boom = AudioClip.Create("GrenadeBoom", n, 1, rate, false);
+            _boom.SetData(data, 0);
+        }
+        _sfxSource.PlayOneShot(_boom, sfxVolume * 1.1f);
+    }
+
+    public void PlayGuardShotSfx() => PlayClipOrFallback(obstacleHitSound, 1.9f, 0.45f);
     public void PlaySlowDownObstacleSfx() => PlayClipOrFallback(slowDownObstacleSound, 0.48f, 0.75f);
 
     public void PlayCutsceneStinger(LevelCutsceneType type, int phase = 0)
