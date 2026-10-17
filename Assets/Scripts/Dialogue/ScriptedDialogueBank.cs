@@ -98,7 +98,7 @@ public static class ScriptedDialogueBank
         {
             "Watch the floor — rolling drum traps ahead. Jump early or get crushed!",
             "Motion alarms fire the moment you slow down. Don't stop, Pulse!",
-            "Hall of Echoes: two artifacts, tighter patrols, and drum traps on every path.",
+            "Hall of Harmony: two artifacts, tighter patrols, and drum traps on every path.",
         },
         ["Underground Club"] = new[]
         {

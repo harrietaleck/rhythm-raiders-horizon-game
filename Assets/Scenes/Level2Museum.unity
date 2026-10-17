@@ -2063,6 +2063,7 @@ MonoBehaviour:
   damage: 8
   vibeDamage: 22
   instantKill: 0
+  displayName: 
 --- !u!54 &256415596
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3141,6 +3142,7 @@ MonoBehaviour:
   damage: 15
   vibeDamage: 0
   instantKill: 0
+  displayName: 
 --- !u!54 &385503140
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -6712,6 +6714,65 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 97456095706b3f44ba46b8d4321eb5f8, type: 3}
   m_PrefabInstance: {fileID: 972209557}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &992828785
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 992828787}
+  - component: {fileID: 992828786}
+  m_Layer: 0
+  m_Name: MuseumRun
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &992828786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 992828785}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe4c23d8129848b4bb37299d56fc6eeb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MuseumRun
+  lanes:
+  - -7
+  - 0
+  - 7
+  warmUp: 50
+  lookAhead: 120
+  keepBehind: 25
+  artifactDistances:
+  - 280
+  - 600
+  hazardWidthScale: 1.3
+  drumModel: {fileID: 919132149155446097, guid: 7ef391ba99fb3ed4e84f3da67a9cf28a, type: 3}
+  bpm: 110
+  beatWindow: 0.14
+  notesForThirdStar: 100
+--- !u!4 &992828787
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 992828785}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1024918710
 GameObject:
   m_ObjectHideFlags: 0
@@ -11511,6 +11572,10 @@ MonoBehaviour:
   Ground:
     serializedVersion: 2
     m_Bits: 64
+  stumbleDuration: 1.4
+  dashMultiplier: 1.35
+  dashDuration: 0.7
+  tumbleOverHeight: 1.7
 --- !u!143 &1564157122
 CharacterController:
   m_ObjectHideFlags: 0
@@ -11730,6 +11795,7 @@ MonoBehaviour:
   speedDampTime: 0.1
   fallDeathY: -5
   voidFallDeathDelay: 0.35
+  stumbleClipOffset: 0.3
 --- !u!1 &1623498544
 GameObject:
   m_ObjectHideFlags: 0
@@ -14132,6 +14198,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 947acd002848314479e3b85bc2ecf7ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArtifactGoal
+  spinDegreesPerSecond: 120
+  bobHeight: 0.12
+  sinkSeconds: 0.5
 --- !u!54 &1944144899
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -15692,3 +15761,4 @@ SceneRoots:
   - {fileID: 104481652}
   - {fileID: 256415598}
   - {fileID: 1232458478}
+  - {fileID: 992828787}

@@ -15,6 +15,9 @@ public class Spawner : MonoBehaviour
 
     public int spawnCount = 8;
 
+    /// <summary>Set by levels that lay out their own course (Level 2 MuseumRun).</summary>
+    public static bool Suppressed;
+
     [Tooltip("If populated, uses weighted random. Leave empty to fall back to spawnObjects.")]
     public WeightedSpawnEntry[] weightedObjects;
 
@@ -38,7 +41,7 @@ public class Spawner : MonoBehaviour
 
     public void SpawnGameObjects(GameObject ground)
     {
-        if (ground == null) return;
+        if (ground == null || Suppressed) return;
 
         var footprint = GroundChain.GetSpawnFootprint(ground);
         GetSpawnRange(ground, footprint, out float minX, out float maxX, out float minZ, out float maxZ);

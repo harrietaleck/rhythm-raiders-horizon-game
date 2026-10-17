@@ -21,13 +21,17 @@ public class RunNote : MonoBehaviour
             visual.Rotate(0f, 160f * Time.deltaTime, 0f, Space.World);
 
         var director = RunDirector.Instance;
-        if (_player == null || director == null || !director.MagnetActive) return;
+        bool magnet = director != null ? director.MagnetActive
+                    : MuseumRun.Instance != null ? MuseumRun.Instance.MagnetActive
+                    : ClubRun.Instance != null && ClubRun.Instance.MagnetActive;
+        if (_player == null || !magnet) return;
 
+        float radius = director != null ? director.magnetRadius : MuseumRun.Instance != null ? MuseumRun.MagnetRadius : ClubRun.MagnetRadius;
         Vector3 target = _player.position + Vector3.up * 0.2f;
         float dist = Vector3.Distance(transform.position, target);
-        if (dist < director.magnetRadius)
+        if (dist < radius)
         {
-            transform.position = Vector3.MoveTowards(transform.position, target, (18f + (director.magnetRadius - dist) * 4f) * Time.deltaTime);
+            transform.position = Vector3.MoveTowards(transform.position, target, (18f + (radius - dist) * 4f) * Time.deltaTime);
             if (dist < 0.9f) Collect();
         }
     }
@@ -42,7 +46,9 @@ public class RunNote : MonoBehaviour
     {
         if (_taken || !GameManager.GameStarted) return;
         _taken = true;
-        RunDirector.Instance?.AddNote();
+        if (RunDirector.Instance != null) RunDirector.Instance.AddNote();
+        else if (MuseumRun.Instance != null) MuseumRun.Instance.AddNote();
+        else ClubRun.Instance?.AddNote();
         Destroy(gameObject);
     }
 }

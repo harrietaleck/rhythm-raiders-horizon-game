@@ -12,6 +12,9 @@ public static class MuseumHall
     public const float HalfWidth = 12.5f;
     public const float CeilingY = 9f;
     public const float BayLength = 12f;
+
+    /// <summary>Raised for each interactive or treasure case: world position, is treasure.</summary>
+    public static System.Action<Vector3, bool> GuardableExhibitBuilt;
     const float LaneEdge = 9.3f;
 
     static readonly Dictionary<string, Material> Mats = new Dictionary<string, Material>();
@@ -110,8 +113,16 @@ public static class MuseumHall
 
         // Glass exhibit case with an instrument, alternating sides.
         float exhibitSide = index % 2 == 0 ? -1f : 1f;
-        Exhibit(t, new Vector3(exhibitSide * (HalfWidth - 2.1f), 0f, 3f), instruments, index);
-        Exhibit(t, new Vector3(-exhibitSide * (HalfWidth - 2.1f), 0f, 9f), instruments, index + 7);
+        var posA = new Vector3(exhibitSide * (HalfWidth - 2.1f), 0f, 3f);
+        var posB = new Vector3(-exhibitSide * (HalfWidth - 2.1f), 0f, 9f);
+        bool interactiveA = index % 3 == 1;
+        bool treasureB = index % 5 == 3;
+        // Side cases: mostly cyan boosts, with some red curses and purple gambles further in.
+        var moodA = index % 9 == 4 ? ExhibitMood.Curse : index % 9 == 7 ? ExhibitMood.Mystery : ExhibitMood.Blessing;
+        Exhibit(t, posA, instruments, index, interactiveA, mood: moodA);
+        Exhibit(t, posB, instruments, index + 7, treasureB, treasure: treasureB);
+        if (interactiveA && moodA == ExhibitMood.Blessing) GuardableExhibitBuilt?.Invoke(t.position + posA, false);
+        if (treasureB) GuardableExhibitBuilt?.Invoke(t.position + posB, true);
 
         if (index % 2 == 0)
             Chandelier(t, new Vector3(0f, CeilingY - 2.4f, mid));
@@ -121,21 +132,97 @@ public static class MuseumHall
 
     // ── Pieces ──────────────────────────────────────────────────────────────
 
-    static void Exhibit(Transform parent, Vector3 pos, IList<GameObject> instruments, int seed)
+    /// <summary>Cap / light colour for each kind of case: cyan boost, red curse, purple gamble.</summary>
+    public static Color MoodColor(ExhibitMood mood) => mood switch
+    {
+        ExhibitMood.Curse => new Color(1f, 0.22f, 0.18f, 1f),
+        ExhibitMood.Mystery => new Color(0.72f, 0.42f, 1f, 1f),
+        _ => new Color(0.35f, 0.9f, 1f, 1f),
+    };
+
+    static Material GlassFor(ExhibitMood mood)
+    {
+        var c = mood == ExhibitMood.Blessing ? new Color(0.7f, 0.9f, 1f) : Color.Lerp(new Color(0.7f, 0.9f, 1f), MoodColor(mood), 0.6f);
+        return RooftopProps.Glow(new Color(c.r, c.g, c.b, mood == ExhibitMood.Blessing ? 0.1f : 0.18f));
+    }
+
+    /// <summary>
+    /// A free-standing glass case in a running lane. Run into it to smash it: cyan gives a boost,
+    /// red a curse, purple could be either. No ropes, so it reads as a pickup you can choose to take.
+    /// </summary>
+    public static GameObject PathCase(Transform parent, Vector3 worldPos, IList<GameObject> instruments, int seed, ExhibitMood mood)
+    {
+        var root = RooftopProps.Root("Path Case", parent, worldPos).transform;
+        var color = MoodColor(mood);
+        var gold = Lit(Gold, 0.65f, 0.8f);
+        Part(PrimitiveType.Cube, root, new Vector3(0f, 0.45f, 0f), new Vector3(1.2f, 0.9f, 1.2f), Lit(Marble, 0.75f));
+        Part(PrimitiveType.Cube, root, new Vector3(0f, 0.92f, 0f), new Vector3(1.3f, 0.06f, 1.3f), gold);
+        var glass = Part(PrimitiveType.Cube, root, new Vector3(0f, 1.6f, 0f), new Vector3(1.1f, 1.3f, 1.1f), GlassFor(mood));
+        Part(PrimitiveType.Cube, root, new Vector3(0f, 2.28f, 0f), new Vector3(1.16f, 0.05f, 1.16f), gold);
+        Part(PrimitiveType.Cube, root, new Vector3(0f, 2.43f, 0f), new Vector3(0.45f, 0.12f, 0.45f), RooftopProps.Glow(color));
+        // Soft coloured halo so the case type reads from far down the hall.
+        Part(PrimitiveType.Sphere, root, new Vector3(0f, 1.6f, 0f), new Vector3(1.9f, 2.1f, 1.9f),
+             RooftopProps.Glow(new Color(color.r, color.g, color.b, 0.07f)));
+
+        var instrument = Instrument(root, seed, instruments, out var kind);
+        instrument.transform.localPosition = new Vector3(0f, 1.0f, 0f);
+        instrument.transform.localScale *= 0.85f;
+
+        var exhibit = root.gameObject.AddComponent<InteractiveExhibit>();
+        exhibit.kind = kind;
+        exhibit.mood = mood;
+        exhibit.ringColor = color;
+        exhibit.glass = glass.GetComponent<Renderer>();
+        exhibit.spin = instrument.GetComponent<ExhibitSpin>();
+        var trigger = root.gameObject.AddComponent<BoxCollider>();
+        trigger.isTrigger = true;
+        trigger.center = new Vector3(0f, 1.2f, 0f);
+        trigger.size = new Vector3(2.2f, 2.4f, 1.6f);
+        return root.gameObject;
+    }
+
+
+    static void Exhibit(Transform parent, Vector3 pos, IList<GameObject> instruments, int seed, bool interactive, bool treasure = false,
+                        ExhibitMood mood = ExhibitMood.Blessing)
     {
         var root = RooftopProps.Root("Exhibit", parent, parent.position + pos).transform;
         var gold = Lit(Gold, 0.65f, 0.8f);
         Part(PrimitiveType.Cube, root, new Vector3(0f, 0.55f, 0f), new Vector3(1.3f, 1.1f, 1.3f), Lit(Marble, 0.75f));
         Part(PrimitiveType.Cube, root, new Vector3(0f, 1.12f, 0f), new Vector3(1.4f, 0.06f, 1.4f), gold);
-        Part(PrimitiveType.Cube, root, new Vector3(0f, 1.85f, 0f), new Vector3(1.2f, 1.4f, 1.2f), RooftopProps.Glow(new Color(0.7f, 0.9f, 1f, 0.1f)));
+        var glass = Part(PrimitiveType.Cube, root, new Vector3(0f, 1.85f, 0f), new Vector3(1.2f, 1.4f, 1.2f), GlassFor(interactive && !treasure ? mood : ExhibitMood.Blessing));
         Part(PrimitiveType.Cube, root, new Vector3(0f, 2.57f, 0f), new Vector3(1.26f, 0.05f, 1.26f), gold);
-        Part(PrimitiveType.Cube, root, new Vector3(0f, 0.02f, 0f), new Vector3(2.6f, 0.01f, 2.6f), RooftopProps.Glow(new Color(1f, 0.85f, 0.55f, 0.1f)));
 
-        var instrument = Instrument(root, seed, instruments);
+        ExhibitKind kind;
+        GameObject instrument;
+        if (treasure)
+        {
+            instrument = TreasureChest(root);
+            kind = ExhibitKind.Treasure;
+        }
+        else
+            instrument = Instrument(root, seed, instruments, out kind);
         instrument.transform.localPosition = new Vector3(0f, 1.2f, 0f);
 
         // Velvet rope on the lane side.
         float laneSide = -Mathf.Sign(pos.x);
+
+        if (interactive)
+        {
+            // Interactive case: glowing cap (silver-white for treasure); run past it in the outer lane to play.
+            var ringColor = treasure ? new Color(0.85f, 0.92f, 1f, 1f) : MoodColor(mood);
+            // No floor marker: the glowing cap and case mark it; run past it in the outer lane to play.
+            Part(PrimitiveType.Cube, root, new Vector3(0f, 2.75f, 0f), new Vector3(0.5f, 0.12f, 0.5f), RooftopProps.Glow(ringColor));
+            var exhibit = root.gameObject.AddComponent<InteractiveExhibit>();
+            exhibit.kind = kind;
+            exhibit.mood = treasure ? ExhibitMood.Blessing : mood;
+            exhibit.ringColor = ringColor;
+            exhibit.glass = glass.GetComponent<Renderer>();
+            exhibit.spin = instrument.GetComponent<ExhibitSpin>();
+            var trigger = root.gameObject.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.center = new Vector3(laneSide * 3.3f, 1.2f, 0f);
+            trigger.size = new Vector3(3.2f, 2.4f, 3.2f);
+        }
         foreach (float dz in new[] { -0.9f, 0.9f })
         {
             Part(PrimitiveType.Cylinder, root, new Vector3(laneSide * 1.25f, 0.45f, dz), new Vector3(0.08f, 0.45f, 0.08f), gold);
@@ -145,7 +232,7 @@ public static class MuseumHall
     }
 
     /// <summary>An instrument model from the asset packs, or a built one, about 1 m tall.</summary>
-    static GameObject Instrument(Transform parent, int seed, IList<GameObject> models)
+    static GameObject Instrument(Transform parent, int seed, IList<GameObject> models, out ExhibitKind kind)
     {
         int count = (models != null ? models.Count : 0) + 4;
         int pick = Mathf.Abs(seed * 7919) % count;
@@ -154,6 +241,8 @@ public static class MuseumHall
         {
             go = Object.Instantiate(models[pick], parent);
             go.name = models[pick].name;
+            string n = go.name.ToLowerInvariant();
+            kind = n.Contains("drum") ? ExhibitKind.Drum : n.Contains("head") ? ExhibitKind.Headset : ExhibitKind.Note;
             foreach (var c in go.GetComponentsInChildren<Collider>()) Object.Destroy(c);
             foreach (var mb in go.GetComponentsInChildren<MonoBehaviour>()) Object.Destroy(mb);
             FitToSize(go, 1.1f);
@@ -164,12 +253,32 @@ public static class MuseumHall
             go.transform.SetParent(parent, false);
             switch ((pick - (models != null ? models.Count : 0)) % 4)
             {
-                case 0: Violin(go.transform); break;
-                case 1: Horn(go.transform); break;
-                case 2: Harp(go.transform); break;
-                default: Gramophone(go.transform); break;
+                case 0: Violin(go.transform); kind = ExhibitKind.Violin; break;
+                case 1: Horn(go.transform); kind = ExhibitKind.Horn; break;
+                case 2: Harp(go.transform); kind = ExhibitKind.Harp; break;
+                default: Gramophone(go.transform); kind = ExhibitKind.Gramophone; break;
             }
         }
+        go.AddComponent<ExhibitSpin>();
+        return go;
+    }
+
+    /// <summary>Treasure chest for reward cases (metal trim and coins, no glow).</summary>
+    static GameObject TreasureChest(Transform parent)
+    {
+        var go = new GameObject("TreasureChest");
+        go.transform.SetParent(parent, false);
+        var t = go.transform;
+        var wood = Lit(new Color(0.35f, 0.18f, 0.07f), 0.5f);
+        var gold = Lit(new Color(0.95f, 0.75f, 0.25f), 0.85f, 0.9f);
+        Part(PrimitiveType.Cube, t, new Vector3(0f, 0.2f, 0f), new Vector3(0.8f, 0.4f, 0.5f), wood);
+        Part(PrimitiveType.Cube, t, new Vector3(0f, 0.48f, -0.05f), new Vector3(0.82f, 0.18f, 0.52f), wood, new Vector3(-20f, 0f, 0f));
+        foreach (float x in new[] { -0.3f, 0f, 0.3f })
+            Part(PrimitiveType.Cube, t, new Vector3(x, 0.3f, 0f), new Vector3(0.06f, 0.62f, 0.54f), gold);
+        Part(PrimitiveType.Cube, t, new Vector3(0f, 0.32f, 0.26f), new Vector3(0.14f, 0.16f, 0.03f), gold);
+        var coin = Lit(new Color(0.9f, 0.72f, 0.3f), 0.8f, 0.95f);
+        for (int i = 0; i < 5; i++)
+            Part(PrimitiveType.Cylinder, t, new Vector3(-0.2f + i * 0.1f, 0.62f + (i % 2) * 0.05f, 0.05f), new Vector3(0.12f, 0.01f, 0.12f), coin, new Vector3(70f, 0f, 0f));
         go.AddComponent<ExhibitSpin>();
         return go;
     }

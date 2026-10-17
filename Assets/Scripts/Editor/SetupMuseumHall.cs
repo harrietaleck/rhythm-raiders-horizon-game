@@ -4,8 +4,8 @@ using UnityEngine;
 
 /// <summary>
 /// Tools → Setup Level 2 Museum Hall
-/// Adds the streamed night-museum interior to Level 2 and assigns the ceiling
-/// texture and instrument models from the project's asset packs.
+/// Adds the streamed night-museum interior and the MuseumRun course controller to Level 2,
+/// and assigns the ceiling texture and instrument models from the project's asset packs.
 /// </summary>
 public static class SetupMuseumHall
 {
@@ -40,6 +40,12 @@ public static class SetupMuseumHall
         }
         stream.instrumentModels = models.ToArray();
         EditorUtility.SetDirty(stream);
+
+        var run = Object.FindAnyObjectByType<MuseumRun>();
+        if (run == null)
+            run = new GameObject("MuseumRun").AddComponent<MuseumRun>();
+        run.drumModel = AssetDatabase.LoadAssetAtPath<GameObject>(InstrumentPaths[0]);
+        EditorUtility.SetDirty(run);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
