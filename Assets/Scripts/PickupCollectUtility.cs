@@ -18,6 +18,9 @@ public static class PickupCollectUtility
         return root != null && Consumed.Contains(root.GetInstanceID());
     }
 
+    /// <summary>Marks a pickup as collected without hiding or destroying it (it animates itself away).</summary>
+    public static bool MarkConsumed(GameObject root) => root != null && Consumed.Add(root.GetInstanceID());
+
     public static bool TryConsumeFromCollider(Collider col)
     {
         if (col == null) return false;
