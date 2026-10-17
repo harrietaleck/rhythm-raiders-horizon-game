@@ -133,6 +133,71 @@ public static class SetupShopScene
         RunDirector.Instance.ApplyPower(PowerPickup.Kind.SmokeBomb, null);
     }
 
+    [MenuItem("Tools/Debug/Smash Treasure Case (Play Mode, Level 2)")]
+    static void SmashTreasure()
+    {
+        if (!Application.isPlaying) return;
+        var player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null) return;
+        InteractiveExhibit best = null;
+        float bestDz = float.MaxValue;
+        foreach (var ex in Object.FindObjectsByType<InteractiveExhibit>(FindObjectsSortMode.None))
+        {
+            float dz = ex.transform.position.z - player.transform.position.z;
+            if (ex.kind == ExhibitKind.Treasure && !ex.Played && dz > 8f && dz < 22f && dz < bestDz) { best = ex; bestDz = dz; }
+        }
+        if (best == null) { Debug.Log("No treasure case 8-22m ahead yet."); return; }
+        best.Play(player.GetComponent<PickupBase>());
+        Debug.Log($"Smashed treasure case {bestDz:0}m ahead.");
+        if (_pauseAfterSmash) PauseAt(Time.time + 0.25f);
+    }
+
+    static bool _pauseAfterSmash = true;
+
+    /// <summary>Pauses the game a moment after the smash so the glass burst can be inspected.</summary>
+    static void PauseAt(float time)
+    {
+        EditorApplication.CallbackFunction check = null;
+        check = () =>
+        {
+            if (!Application.isPlaying) { EditorApplication.update -= check; return; }
+            if (Time.time < time) return;
+            EditorApplication.update -= check;
+            EditorApplication.isPaused = true;
+        };
+        EditorApplication.update += check;
+    }
+
+    [MenuItem("Tools/Debug/Test Game Over Name (Play Mode)")]
+    static void TestGameOverName()
+    {
+        if (!Application.isPlaying) return;
+        var pickup = GameObject.FindGameObjectWithTag("Player")?.GetComponent<PickupBase>();
+        if (pickup == null) return;
+        var go = new GameObject("Laser Grid");
+        var h = go.AddComponent<HealthDecreaseObstacle>();
+        h.instantKill = true;
+        pickup.invulnerableUntil = 0f;
+        pickup.ApplyObstacleDamage(h);
+        Object.Destroy(go);
+    }
+
+    [MenuItem("Tools/Debug/Win Current Level (Play Mode)")]
+    static void WinCurrentLevel()
+    {
+        if (!Application.isPlaying) return;
+        var pickup = GameObject.FindGameObjectWithTag("Player")?.GetComponent<PickupBase>();
+        if (pickup != null) pickup.artifactAmount = PickupBase.ArtifactsToWin;
+        Object.FindAnyObjectByType<GameManager>()?.TriggerVictory();
+    }
+
+    [MenuItem("Tools/Debug/Clear Saved Player Records")]
+    static void ClearRecords()
+    {
+        PlayerRecords.ClearAll();
+        Debug.Log("[PlayerRecords] All saved records and the player name were cleared.");
+    }
+
     static void OpenLevel(int level)
     {
         if (!Application.isPlaying) return;

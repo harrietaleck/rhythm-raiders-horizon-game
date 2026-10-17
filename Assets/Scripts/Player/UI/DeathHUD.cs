@@ -253,5 +253,10 @@ public class DeathHUD : MonoBehaviour
         text.fontStyle = FontStyles.Bold;
         text.alignment = TextAlignmentOptions.Center;
         text.color = Color.white;
+        text.richText = true;
+        // Shrink to fit when the glass-case line is added under the run stats.
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 14f;
+        text.fontSizeMax = 30f;
     }
 }

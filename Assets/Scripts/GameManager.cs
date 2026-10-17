@@ -359,6 +359,7 @@ public class GameManager : MonoBehaviour
             ? playerMovement.GetComponent<PickupBase>()
             : FindAnyObjectByType<PickupBase>();
         RunStats.SaveFrom(pickup);
+        PlayerRecords.RecordWin(ActiveLevel, pickup);
 
         // Record the completed level but do NOT advance yet.
         // The "Next Level" button on the VictoryScene scoreboard does the advance.

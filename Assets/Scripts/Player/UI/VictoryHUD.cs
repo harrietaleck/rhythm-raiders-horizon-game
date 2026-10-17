@@ -44,6 +44,8 @@ public class VictoryHUD : MonoBehaviour
     // ── Internal ──────────────────────────────────────────────────────────────
     private int  _completedLevel;
     private bool _hasNextLevel;
+    private bool _namePromptOpen;
+    private bool _hallPending;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
     private void Awake()
@@ -64,6 +66,18 @@ public class VictoryHUD : MonoBehaviour
 
         // ── Scoreboard ────────────────────────────────────────────────────────
         ShowScoreboard();
+
+        // First win: ask for the player's name so records are saved under it.
+        if (!PlayerRecords.HasPlayerName)
+        {
+            _namePromptOpen = true;
+            RecordsUI.ShowNamePrompt(() =>
+            {
+                _namePromptOpen = false;
+                ShowScoreboard();
+                if (_hallPending) { _hallPending = false; RecordsUI.ShowHallOfFame(null); }
+            });
+        }
 
         // ── Buttons — hidden until narration finishes ──────────────────────
         SetButtonVisible(playAgainButton, false);
@@ -104,10 +118,12 @@ public class VictoryHUD : MonoBehaviour
             var go = GameObject.Find("ScoreText");
             if (go != null) scoreText = go.GetComponent<TextMeshProUGUI>();
         }
+        if (scoreText == null)
+            scoreText = RecordsUI.ShowResultsPanel("LEVEL RESULTS");
 
         var def       = LevelCatalog.Get(_completedLevel);
         string header = $"<b>Level {_completedLevel}  —  {def.displayName}</b>";
-        string body   = RunStats.FormatScoreSummary();
+        string body   = RunStats.FormatScoreSummary() + "\n" + RecordLine();
 
         if (scoreText != null)
         {
@@ -118,6 +134,19 @@ public class VictoryHUD : MonoBehaviour
             // Fallback: append score under the YOU WIN title using rich-text size tag
             titleText.text = $"YOU WIN!\n\n<size=55%>{header}\n{body}</size>";
         }
+    }
+
+    /// <summary>Saved-record summary for this level: new best or the best to beat.</summary>
+    private string RecordLine()
+    {
+        var rec = PlayerRecords.LastRecorded;
+        var best = PlayerRecords.Best(_completedLevel);
+        string who = PlayerRecords.PlayerName;
+        if (rec != null && rec.level == _completedLevel && PlayerRecords.LastWasNewBest)
+            return $"<color=#FFD65A><b>NEW BEST!</b>  {rec.score:N0} pts  -  {rec.stars}/3 stars  -  saved for {who}</color>";
+        if (best != null)
+            return $"<color=#5AD9FF>Best: {best.score:N0} pts  -  {best.stars}/3 stars  ({best.playerName})</color>";
+        return "";
     }
 
     // ── Narration ─────────────────────────────────────────────────────────────
@@ -155,6 +184,13 @@ public class VictoryHUD : MonoBehaviour
         // Next Level only appears if there's somewhere to go
         if (nextButton != null)
             SetButtonVisible(nextButton, true);   // label already says FINISH if final level
+
+        // Final level won: show the full campaign scores and the Hall of Fame.
+        if (!_hasNextLevel)
+        {
+            if (_namePromptOpen) _hallPending = true;
+            else RecordsUI.ShowHallOfFame(null);
+        }
     }
 
     public void OnPlayAgain()
