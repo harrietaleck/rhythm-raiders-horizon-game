@@ -85,6 +85,16 @@ public class EnemyBase : MonoBehaviour
 
         float chaseSpeed = GetChaseSpeed();
 
+        // Player tripped: sprint in to the lunge gap and hold it until they're back up.
+        if (Time.time < _lungeUntil && !IsStunned)
+        {
+            targetPosition.z = player.position.z - _lungeGap;
+            if (transform.position.z < targetPosition.z)
+                chaseSpeed = Mathf.Max(chaseSpeed, lungeSpeed);
+            else
+                targetPosition.z = Mathf.Min(targetPosition.z, transform.position.z);   // never back away
+        }
+
         //Move toward player
         transform.position = Vector3.MoveTowards(transform.position, targetPosition, chaseSpeed * Time.deltaTime);
         SnapToGround(false);
@@ -132,6 +142,49 @@ public class EnemyBase : MonoBehaviour
         _speedMultiplier = Mathf.Max(0.1f, multiplier);
     }
 
+    [Header("Stumble pursuit")]
+    [Tooltip("Metres the guard gains on the player each time they trip.")]
+    public float stumbleGain = 5f;
+    [Tooltip("Closest the guard gets from a single trip. Trip again while this close and you're caught.")]
+    public float stumbleMinGap = 2.4f;
+    [Tooltip("Guard sprint speed while closing in on a tripped player.")]
+    public float lungeSpeed = 16f;
+
+    float _lungeUntil;
+    float _lungeGap;
+
+    /// <summary>Distance from guard to player along the run (metres).</summary>
+    public float Gap => player != null ? player.position.z - transform.position.z : 999f;
+
+    /// <summary>
+    /// The player tripped over something. The guard sprints in to steal
+    /// <see cref="stumbleGain"/> metres. If they were already on the player's
+    /// heels, the trip is fatal.
+    /// </summary>
+    public void ClosePursuitGap(PickupBase victim)
+    {
+        if (!enabled || !GameManager.GameStarted || player == null || IsStunned) return;
+        if (victim != null && victim.isSneaking) return;
+
+        float gap = Gap;
+        if (gap <= stumbleMinGap + 0.6f)
+        {
+            _lungeGap = 0.4f;                       // dive onto the player — catch on contact
+            _lungeUntil = Time.time + 1.5f;
+            Invoke(nameof(CatchIfStillDown), 0.45f);
+            return;
+        }
+
+        _lungeGap = Mathf.Max(stumbleMinGap, gap - stumbleGain);
+        float duration = playerMovement != null ? playerMovement.stumbleDuration : 1.75f;
+        _lungeUntil = Time.time + duration;
+    }
+
+    void CatchIfStillDown()
+    {
+        if (playerMovement != null && playerMovement.IsStumbling) CatchPlayer();
+    }
+
     public void Stun(float seconds)
     {
         _stunnedUntil = Mathf.Max(_stunnedUntil, Time.time + seconds);
@@ -176,7 +229,7 @@ public class EnemyBase : MonoBehaviour
     private void CatchPlayer()
     {
         if (_caughtPlayer || pickupBase == null) return;
-        if (!GameManager.GameStarted) return;
+        if (!enabled || !GameManager.GameStarted) return;   // disabled at victory: no late catches
         if (pickupBase.isSneaking) return;
 
         _caughtPlayer = true;

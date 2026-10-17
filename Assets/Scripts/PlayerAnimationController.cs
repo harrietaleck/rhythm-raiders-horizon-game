@@ -31,6 +31,12 @@ public class PlayerAnimationController : MonoBehaviour
     private static readonly int SpeedHash  = Animator.StringToHash("Speed");
     private static readonly int JumpHash   = Animator.StringToHash("Jump");
     private static readonly int IsDeadHash = Animator.StringToHash("IsDead");
+    private static readonly int StumbleHash = Animator.StringToHash("Stumble");
+    private static readonly int StumbleStateHash = Animator.StringToHash("Base Layer.Stumble");
+    private bool _hasStumbleParam;
+
+    [Tooltip("Seconds into the StumbleFall clip to start from — skips the slow upright lead-in so the body pitches forward on impact.")]
+    public float stumbleClipOffset = 0.45f;
 
     private void Awake()
     {
@@ -46,7 +52,11 @@ public class PlayerAnimationController : MonoBehaviour
         }
 
         if (characterAnimator != null)
+        {
             characterAnimator.applyRootMotion = false;
+            foreach (var p in characterAnimator.parameters)
+                if (p.nameHash == StumbleHash) _hasStumbleParam = true;
+        }
     }
 
     private void Update()
@@ -87,6 +97,19 @@ public class PlayerAnimationController : MonoBehaviour
             TriggerDefeat();
 
         wasDead = isDead;
+    }
+
+    /// <summary>
+    /// Called by PlayerMovement in the same frame as the collision so the trip
+    /// reads instantly — no waiting a frame for a trigger or for the clip's lead-in.
+    /// </summary>
+    public void PlayStumble()
+    {
+        if (characterAnimator == null || !_hasStumbleParam) return;
+        if (!characterAnimator.HasState(0, StumbleStateHash)) return;
+        characterAnimator.ResetTrigger(JumpHash);
+        characterAnimator.CrossFadeInFixedTime(StumbleStateHash, 0.02f, 0, stumbleClipOffset);
+        characterAnimator.Update(0f);   // apply the first stumble pose this frame
     }
 
     bool CheckVoidFall()

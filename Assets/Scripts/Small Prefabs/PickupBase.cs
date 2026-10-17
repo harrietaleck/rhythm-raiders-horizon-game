@@ -99,7 +99,8 @@ public class PickupBase : MonoBehaviour
         if (!GameManager.GameStarted || other == null) return;
         if (PickupCollectUtility.IsPickupConsumed(other)) return;
 
-        int rootId = other.transform.root.GetInstanceID();
+        var hdo = other.GetComponentInParent<HealthDecreaseObstacle>();
+        int rootId = hdo != null ? hdo.gameObject.GetInstanceID() : other.transform.root.GetInstanceID();
         if (_solidHitTimes.TryGetValue(rootId, out float lastHit)
             && Time.time - lastHit < SolidHitCooldown)
             return;
@@ -107,14 +108,7 @@ public class PickupBase : MonoBehaviour
         if (HasTag(other, GameplayCollisionUtility.TagHealthDec))
         {
             _solidHitTimes[rootId] = Time.time;
-            Debug.Log("Player bumped a dangerous obstacle!");
-            AudioManager.Instance?.PlayObstacleHitSfx();
-            var obstacle = other.GetComponentInParent<HealthDecreaseObstacle>();
-            if (obstacle != null)
-                ApplyObstacleDamage(obstacle);
-            else
-                HealthDecrease();
-            DestroyPickupRoot(other);
+            HitObstacle(other);
             return;
         }
 
@@ -142,25 +136,20 @@ public class PickupBase : MonoBehaviour
             DestroyPickupRoot(other);
         }
         if (HasTag(other, "HealthDEC"))
-        {
-            Debug.Log("Player hit a dangerous obstacle!");
-            AudioManager.Instance?.PlayObstacleHitSfx();
-            var obstacle = other.GetComponentInParent<HealthDecreaseObstacle>();
-            if (obstacle != null)
-                ApplyObstacleDamage(obstacle);
-            else
-                HealthDecrease();
-            DestroyPickupRoot(other);
-        }
+            HitObstacle(other);
         // Guard catch is handled exclusively by EnemyBase.CatchPlayer() to avoid double-trigger.
         if (HasTag(other, "Artifact"))
         {
             if (other.GetComponentInParent<MusicInstrument>() != null)
                 return;
 
-            Debug.Log("Player hit an artifac and has increased the amount!");
+            var goal = other.GetComponentInParent<ArtifactGoal>();
+            if (goal != null && !PickupCollectUtility.MarkConsumed(goal.gameObject))
+                return;
+            Debug.Log("Player collected an artifact!");
             Artifact();
-            DestroyPickupRoot(other);
+            if (goal != null) goal.Collect();
+            else DestroyPickupRoot(other);
         }
         if (HasTag(other, "JumpBoost"))
         {
@@ -193,6 +182,55 @@ public class PickupBase : MonoBehaviour
         }
     }
 
+    // Obstacles already hit this run: each one hurts once, then stays put as solid scenery.
+    readonly HashSet<int> _hitObstacles = new HashSet<int>();
+
+    /// <summary>
+    /// Bumping an obstacle: one hit of damage per obstacle, its own impact effect, and the
+    /// obstacle stays where it is (solid) - the player has to jump or change lanes to get past.
+    /// </summary>
+    void HitObstacle(Collider other)
+    {
+        var obstacle = other.GetComponentInParent<HealthDecreaseObstacle>();
+        var root = obstacle != null ? obstacle.gameObject : other.gameObject;
+        var point = other.ClosestPoint(transform.position + Vector3.up * 0.8f);
+        HitObstacleCore(root, obstacle, point, true);
+    }
+
+    /// <summary>Caught in a grenade blast: same cost as bumping an obstacle, explosion already shown.</summary>
+    public void HitByBlast(HealthDecreaseObstacle source, Vector3 point)
+    {
+        if (!GameManager.GameStarted || source == null || isSneaking) return;
+        HitObstacleCore(source.gameObject, source, point, false);
+    }
+
+    void HitObstacleCore(GameObject root, HealthDecreaseObstacle obstacle, Vector3 point, bool playFx)
+    {
+        if (!_hitObstacles.Add(root.GetInstanceID())) return;
+
+        Debug.Log("Player hit an obstacle: " + (obstacle != null ? obstacle.DisplayName : root.name));
+        AudioManager.Instance?.PlayObstacleHitSfx();
+        if (playFx) ObstacleImpactFX.Play(root, point, transform);
+        if (obstacle != null)
+            ApplyObstacleDamage(obstacle);
+        else
+            HealthDecrease();
+
+        // Still standing? Then the bump costs ground, not the run: trip, fall,
+        // get up and dash — while the chasing guard closes in.
+        var movement = GetComponent<PlayerMovement>();
+        if (movement == null) return;
+        if (IsInvulnerable) { movement.PassThrough(root); return; }   // powered up: barge straight through
+        if (_deathHandled || currentHealth <= 0 || !GameManager.GameStarted) return;
+        bool alreadyDown = movement.IsStumbling;
+        movement.Stumble(root);
+        if (!alreadyDown)
+        {
+            var guard = FindAnyObjectByType<EnemyBase>();
+            if (guard != null) guard.ClosePursuitGap(this);
+        }
+    }
+
     static bool HasTag(Collider col, string tag)
     {
         var t = col.transform;
@@ -209,7 +247,7 @@ public class PickupBase : MonoBehaviour
         PickupCollectUtility.TryConsumeFromCollider(col);
     }
 
-    void HealthIncrease()
+    public void HealthIncrease()
     {
         // Always clamp to maxHealth so display never shows e.g. 105/100
         currentHealth = Mathf.Min(currentHealth + healthIncreaseAmount, maxHealth);
@@ -217,6 +255,7 @@ public class PickupBase : MonoBehaviour
     public void HealthDecrease()
     {
         if (IsInvulnerable) return;
+        RunStats.SetKiller(null);
         PlayerHit?.Invoke();
         ApplyDamage(healthDecreaseAmount);
     }
@@ -231,6 +270,7 @@ public class PickupBase : MonoBehaviour
     {
         if (obstacle == null) return;
         if (IsInvulnerable) return;
+        RunStats.SetKiller(obstacle.DisplayName);
         PlayerHit?.Invoke();
         if (obstacle.instantKill)
         {
@@ -287,6 +327,9 @@ public class PickupBase : MonoBehaviour
         artifactAmount     = 0;
         artifactMoneyTotal = 0;
         _deathHandled      = false;
+        _hitObstacles.Clear();
+        RunStats.SetKiller(null);
+        GetComponent<PlayerMovement>()?.ResetStumble();
     }
 
     /// <summary>Instant game over — defeat animation then DeathScene.</summary>
@@ -360,7 +403,7 @@ public class PickupBase : MonoBehaviour
         jumpBoostActive = true;
         Debug.Log("Jump boost activated.");
     }
-    void SpeedBoost()
+    public void SpeedBoost()
     {
         playerMovement.forwardSpeed = playerMovement.baseForwardSpeed + 4f;   // +4 not +12 — still fast, not disorienting
         playerMovement.sidewaySpeed = playerMovement.baseSidewaySpeed + 1.5f;
@@ -368,7 +411,7 @@ public class PickupBase : MonoBehaviour
         speedBoostActive = true;
         Debug.Log("Speed boost activated.");
     }
-    void Sneak()
+    public void Sneak()
     {
         isSneaking = true;
         sneakTimer = 0f;

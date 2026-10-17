@@ -98,10 +98,15 @@ public class PlayerMovement : MonoBehaviour
             canJump = true;
         }
 
-        float horizontal = Input.GetAxis("Horizontal");
-        Vector3 move = new Vector3(horizontal * sidewaySpeed, 0, forwardSpeed);
+        float horizontal = _stumbleSteer ? 0f : Input.GetAxis("Horizontal");
+        Vector3 move = new Vector3(horizontal * sidewaySpeed, 0, forwardSpeed * _stumbleSpeedMul);
+        if (_stumbleSteer)
+        {
+            move.x = _stumbleVelX;
+            move.z += _stumbleVelZ;
+        }
 
-        if (Input.GetButtonDown("Jump") && canJump && isGrounded)
+        if (!_stumbleSteer && Input.GetButtonDown("Jump") && canJump && isGrounded)
         {
             velocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
             canJump = false;
@@ -119,6 +124,185 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!enabled || !GameManager.GameStarted || hit.collider == null) return;
         _pickup?.HandleSolidContact(hit.collider);
+    }
+
+    // ── Stumble ─────────────────────────────────────────────────────────────
+    // Bumping an obstacle no longer stops the run. The player trips over (or is
+    // knocked around) it, hits the floor, gets up and dashes on. The chasing
+    // guard uses the lost seconds to close the gap.
+
+    [Header("Stumble")]
+    [Tooltip("Seconds from the trip until the player is back on their feet (matches the StumbleFall clip from 0.45 s at 1.5x).")]
+    public float stumbleDuration = 1.25f;
+    [Tooltip("Burst of speed after getting up, as a multiplier of forward speed.")]
+    public float dashMultiplier = 1.35f;
+    public float dashDuration = 0.7f;
+    [Tooltip("Obstacles shorter than this (m) are tumbled over; taller ones knock the player aside.")]
+    public float tumbleOverHeight = 1.7f;
+
+    public bool IsStumbling { get; private set; }
+    public bool IsDashing { get; private set; }
+    /// <summary>Raised when a stumble starts. Argument: the obstacle that tripped the player.</summary>
+    public static event System.Action<GameObject> Stumbled;
+
+    float _stumbleSpeedMul = 1f;
+    bool _stumbleSteer;
+    float _stumbleVelX, _stumbleVelZ;
+    Coroutine _stumbleRoutine;
+
+    public void Stumble(GameObject obstacle)
+    {
+        if (!enabled || !GameManager.GameStarted || controller == null) return;
+
+        var cols = PassThrough(obstacle);
+
+        if (IsStumbling) return;   // already on the floor — the hit still counts, no second fall
+
+        Bounds b = new Bounds(transform.position, Vector3.zero);
+        bool haveBounds = false;
+        foreach (var c in cols)
+        {
+            if (c == null) continue;
+            if (!haveBounds) { b = c.bounds; haveBounds = true; } else b.Encapsulate(c.bounds);
+        }
+        if (!haveBounds && obstacle != null)
+            foreach (var r in obstacle.GetComponentsInChildren<Renderer>())
+            {
+                if (!haveBounds) { b = r.bounds; haveBounds = true; } else b.Encapsulate(r.bounds);
+            }
+
+        if (_stumbleRoutine != null) StopCoroutine(_stumbleRoutine);
+        // Kill momentum and start the fall pose right now, in the collision frame.
+        IsStumbling = true;
+        _stumbleSteer = true;
+        _stumbleSpeedMul = 0.35f;
+        GetComponent<PlayerAnimationController>()?.PlayStumble();
+        _stumbleRoutine = StartCoroutine(StumbleRoutine(b, haveBounds));
+        Stumbled?.Invoke(obstacle);
+    }
+
+    /// <summary>Never get stuck on an obstacle already hit: the capsule passes through it from now on.</summary>
+    public Collider[] PassThrough(GameObject obstacle)
+    {
+        var cols = obstacle != null ? obstacle.GetComponentsInChildren<Collider>() : new Collider[0];
+        if (controller == null) return cols;
+        foreach (var c in cols)
+            if (c != null && !c.isTrigger) Physics.IgnoreCollision(controller, c, true);
+        return cols;
+    }
+
+    System.Collections.IEnumerator StumbleRoutine(Bounds b, bool haveBounds)
+    {
+        IsStumbling = true;
+        IsDashing = false;
+        _stumbleSteer = true;
+        _stumbleVelX = 0f;
+        _stumbleVelZ = 0f;
+
+        float feetY = transform.position.y - (controller.height * 0.5f - controller.center.y);
+        bool tall = haveBounds && b.max.y - feetY > tumbleOverHeight;
+        float fallEnd = stumbleDuration * 0.38f;     // hips hit the floor ~38% in
+        float riseStart = stumbleDuration * 0.58f;
+
+        // Where should the body end up? Short obstacle → land on its far side.
+        // Tall obstacle → bounced back a touch and shoved toward the nearest open side.
+        float targetZOffset = 0f;
+        float targetX = transform.position.x;
+        if (haveBounds)
+        {
+            if (!tall)
+            {
+                float need = b.max.z + 0.6f - transform.position.z;
+                targetZOffset = Mathf.Max(0f, need - forwardSpeed * 0.35f * fallEnd);
+            }
+            else
+            {
+                targetZOffset = -0.6f;
+                float left = b.min.x - 0.9f, right = b.max.x + 0.9f;
+                bool leftFree = SpotFree(new Vector3(left, transform.position.y, b.center.z));
+                bool rightFree = SpotFree(new Vector3(right, transform.position.y, b.center.z));
+                if (leftFree || rightFree)
+                {
+                    bool goLeft = leftFree && (!rightFree ||
+                        Mathf.Abs(transform.position.x - left) <= Mathf.Abs(transform.position.x - right));
+                    targetX = goLeft ? left : right;
+                }
+            }
+        }
+
+        float t = 0f;
+        while (t < stumbleDuration)
+        {
+            if (!GameManager.GameStarted) break;
+            float dt = Time.deltaTime;
+            t += dt;
+
+            if (t < fallEnd)
+            {
+                float k = t / fallEnd;
+                _stumbleSpeedMul = Mathf.Lerp(0.35f, 0.05f, k);       // momentum bleeds off as they go down
+                _stumbleVelZ = targetZOffset / fallEnd;
+                _stumbleVelX = tall ? (targetX - transform.position.x) * 3f : 0f;
+            }
+            else if (t < riseStart)
+            {
+                _stumbleSpeedMul = 0f;                                 // on the floor
+                _stumbleVelZ = 0f;
+                _stumbleVelX = (targetX - transform.position.x) * 3f;
+            }
+            else
+            {
+                float k = (t - riseStart) / (stumbleDuration - riseStart);
+                _stumbleSpeedMul = Mathf.Lerp(0f, 0.6f, k);            // scrambling up
+                _stumbleVelZ = 0f;
+                _stumbleVelX = (targetX - transform.position.x) * 3f;
+            }
+            yield return null;
+        }
+
+        _stumbleSteer = false;
+        _stumbleVelX = _stumbleVelZ = 0f;
+        IsStumbling = false;
+
+        // Dash: shoot off the floor to claw some distance back from the guard.
+        IsDashing = true;
+        float d = 0f;
+        while (d < dashDuration && GameManager.GameStarted)
+        {
+            d += Time.deltaTime;
+            float k = d / dashDuration;
+            _stumbleSpeedMul = k < 0.25f
+                ? Mathf.Lerp(0.6f, dashMultiplier, k / 0.25f)
+                : Mathf.Lerp(dashMultiplier, 1f, (k - 0.25f) / 0.75f);
+            yield return null;
+        }
+        _stumbleSpeedMul = 1f;
+        IsDashing = false;
+        _stumbleRoutine = null;
+    }
+
+    bool SpotFree(Vector3 centre)
+    {
+        float r = controller.radius;
+        Vector3 c = centre + controller.center;
+        Vector3 up = Vector3.up * Mathf.Max(0f, controller.height * 0.5f - r);
+        int mask = ~groundMask.value & ~Ground.value & ~(1 << gameObject.layer);
+        if (Physics.CheckCapsule(c - up, c + up, r * 0.9f, mask, QueryTriggerInteraction.Ignore))
+            return false;
+        // Must still have floor underneath (don't shove the player off the side).
+        return Physics.Raycast(centre + Vector3.up * 2f, Vector3.down, 6f, Ground.value != 0 ? Ground.value : groundMask.value,
+            QueryTriggerInteraction.Ignore);
+    }
+
+    /// <summary>Cancel any stumble/dash (new run, death, victory).</summary>
+    public void ResetStumble()
+    {
+        if (_stumbleRoutine != null) StopCoroutine(_stumbleRoutine);
+        _stumbleRoutine = null;
+        IsStumbling = IsDashing = false;
+        _stumbleSteer = false;
+        _stumbleSpeedMul = 1f;
+        _stumbleVelX = _stumbleVelZ = 0f;
     }
 
     void RecoverFromFall()
