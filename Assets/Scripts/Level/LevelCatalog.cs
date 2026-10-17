@@ -80,7 +80,7 @@ public static class LevelCatalog
     {
         levelNumber      = 2,
         displayName      = "Music Museum",
-        codename         = "Hall of Echoes",
+        codename         = "Hall of Harmony",
         gameplayScene    = "Level2Museum",
         nextIntroScene   = "Level3IntroScene",
         briefingTitle    = "Music Museum — Level 2",
@@ -92,7 +92,7 @@ public static class LevelCatalog
         startHint2       = "Rolling drums and alarms ahead — jump clean and keep your rhythm.",
         forwardSpeed     = 10.0f,    // Noticeably faster than L1
         guardSpeed       = 8.5f,
-        guardBoostSpeed  = 16f,      // Surge: guard at 16, player at 10 = 6 m/s close rate
+        guardBoostSpeed  = 13f,      // Surge: guard at 13, player at 10 = 3 m/s close rate (fair with dense museum rows)
         runLookAhead     = 150f,
         spawnCount       = 8,        // Double the obstacles
         artifactsToWin   = 2,
@@ -116,19 +116,19 @@ public static class LevelCatalog
         gameplayCutscene = LevelCutsceneType.ClubDiscoBall,
         introCutscene    = LevelCutsceneType.None,
         briefingLine1    = "The artifact is hidden beneath the main DJ stage.",
-        briefingLine2    = "Guards move with the beat drops. Lasers and sound traps everywhere.",
-        startHint1       = "Final run — neon lights, maximum pressure. Stay on beat!",
+        briefingLine2    = "Bass walls pulse on the beat - cross when they go dark. Lasers sweep the floor.",
+        startHint1       = "Final run - jump laser fences, dodge speaker stacks, ride the beat.",
         startHint2       = "Collect two artifacts and escape before the club locks down.",
-        forwardSpeed     = 13.0f,    // Fastest — hard to control by design
-        guardSpeed       = 11.5f,
-        guardBoostSpeed  = 22f,      // Surge: guard at 22, player at 13 = 9 m/s close rate (hard)
-        runLookAhead     = 175f,
-        spawnCount       = 13,       // Most obstacles
+        forwardSpeed     = 11.0f,    // Fastest level, but readable at club density
+        guardSpeed       = 9.5f,
+        guardBoostSpeed  = 14.5f,    // Surge: guard at 14.5, player at 11 = 3.5 m/s close rate (hard but fair)
+        runLookAhead     = 150f,
+        spawnCount       = 8,        // Unused - ClubRun builds the course
         artifactsToWin   = 2,
         artifactScale    = 1.5f,
         spawnCurtains    = false,
-        hitCount         = 5,        // Very few lives — punishing
-        startHealth      = 80,       // Lower HP — extra pressure
+        hitCount         = 6,        // One fewer shield than Level 2
+        startHealth      = 100,
     };
 
     public static LevelDefinition Get(int level)

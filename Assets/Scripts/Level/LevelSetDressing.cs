@@ -26,10 +26,12 @@ public class LevelSetDressing : MonoBehaviour
         switch (def.levelNumber)
         {
             case 2:
-                BuildMuseumDisplays(startZ);
+                if (FindAnyObjectByType<MuseumHallStream>() == null)
+                    BuildMuseumDisplays(startZ);
                 break;
             case 3:
-                BuildClubNeon(startZ);
+                if (FindAnyObjectByType<ClubHallStream>() == null)
+                    BuildClubNeon(startZ);
                 break;
         }
     }
