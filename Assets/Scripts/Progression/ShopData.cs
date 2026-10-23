@@ -1,7 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Persistent note wallet, power-up upgrades and cosmetic trails (PlayerPrefs).
+/// Persistent note wallet, power-up upgrades, cosmetic trails and jukebox music (PlayerPrefs).
+/// Notes collected during a run can be spent in the jukebox before they are banked.
 /// </summary>
 public static class ShopData
 {
@@ -41,7 +42,26 @@ public static class ShopData
         new TrailInfo { name = "NEON PINK",  cost = 300, color = new Color(1f, 0.35f, 0.75f) },
     };
 
+    public struct MusicInfo
+    {
+        public string id;
+        public string name;
+        public string artist;
+        public int cost;
+    }
+
+    /// <summary>Jukebox tracks. Index 0 = each level's own theme (free). AudioManager maps ids to clips.</summary>
+    public static readonly MusicInfo[] Music =
+    {
+        new MusicInfo { id = "theme",   name = "LEVEL THEME",     artist = "Each level plays its own track", cost = 0 },
+        new MusicInfo { id = "sunrise", name = "ENDLESS SUNRISE", artist = "Infraction - Fashion EDM",       cost = 40 },
+        new MusicInfo { id = "opera",   name = "OPERA GROOVE",    artist = "Rhythm Raiders original",        cost = 50 },
+        new MusicInfo { id = "museum",  name = "MUSEUM NIGHTS",   artist = "Rhythm Raiders original",        cost = 60 },
+        new MusicInfo { id = "vault",   name = "NEON VAULT",      artist = "Rhythm Raiders original",        cost = 80 },
+    };
+
     const string WalletKey = "Shop_Notes";
+    const string MusicKey = "Shop_Music";
     const string TrailKey = "Shop_Trail";
 
     public static int Notes
@@ -53,6 +73,64 @@ public static class ShopData
     public static void AddNotes(int amount)
     {
         if (amount > 0) Notes += amount;
+    }
+
+    // ── Run notes (collected this run, not banked yet) ───────────────────────
+
+    static int _runSpent;
+    static bool _runBanked = true;
+
+    /// <summary>Call when a run starts (RunStats.Notes reset to 0).</summary>
+    public static void BeginRun()
+    {
+        _runSpent = 0;
+        _runBanked = false;
+    }
+
+    /// <summary>Banks this run's notes, minus any already spent in the jukebox.</summary>
+    public static void BankRunNotes(int runNotes)
+    {
+        if (_runBanked) return;
+        _runBanked = true;
+        AddNotes(Mathf.Max(0, runNotes - _runSpent));
+        _runSpent = 0;
+    }
+
+    /// <summary>Unbanked notes from the current run that can still be spent.</summary>
+    public static int RunNotesAvailable => _runBanked ? 0 : Mathf.Max(0, RunStats.Notes - _runSpent);
+
+    /// <summary>Points the player can spend right now: banked wallet + this run's notes.</summary>
+    public static int SpendableNotes => Notes + RunNotesAvailable;
+
+    /// <summary>Spends banked notes (music is bought in the Shop, outside gameplay).</summary>
+    static bool Spend(int cost)
+    {
+        if (cost <= 0) return true;
+        if (Notes < cost) return false;
+        Notes -= cost;
+        return true;
+    }
+
+    // ── Jukebox music ────────────────────────────────────────────────────────
+
+    public static bool OwnsMusic(int i) => i == 0 || PlayerPrefs.GetInt("Shop_MusicOwned_" + i, 0) == 1;
+
+    public static int SelectedMusic => Mathf.Clamp(PlayerPrefs.GetInt(MusicKey, 0), 0, Music.Length - 1);
+
+    public static string SelectedMusicId => Music[SelectedMusic].id;
+
+    /// <summary>Buys the track with banked notes if needed, then selects it.</summary>
+    public static bool SelectMusic(int i)
+    {
+        if (i < 0 || i >= Music.Length) return false;
+        if (!OwnsMusic(i))
+        {
+            if (!Spend(Music[i].cost)) return false;
+            PlayerPrefs.SetInt("Shop_MusicOwned_" + i, 1);
+        }
+        PlayerPrefs.SetInt(MusicKey, i);
+        PlayerPrefs.Save();
+        return true;
     }
 
     public static int Level(Upgrade u) => PlayerPrefs.GetInt("Shop_Up_" + u, 0);

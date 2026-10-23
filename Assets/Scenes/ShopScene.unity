@@ -411,6 +411,7 @@ GameObject:
   - component: {fileID: 439174445}
   - component: {fileID: 439174444}
   - component: {fileID: 439174446}
+  - component: {fileID: 439174447}
   m_Layer: 5
   m_Name: Upgrade0Button
   m_TagString: Untagged
@@ -520,6 +521,183 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &439174447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 439174442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ca0800484ca33449c44f2757a9b3c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSoundPlayer
+--- !u!1 &456014654
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 456014657}
+  - component: {fileID: 456014656}
+  - component: {fileID: 456014655}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &456014655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 456014654}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29191079bc5f46e42b05a9c99b0f565d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+  rooftopMusic: {fileID: 8300000, guid: 96057f7f73df1ef4f929fc217f1b0a7e, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: 0a286b0fc099f7d4bb682999fa3f2cf2, type: 3}
+  level2Music: {fileID: 8300000, guid: 41c1bb3283b99f247a2744579b2cbdbb, type: 3}
+  level3Music: {fileID: 8300000, guid: 54ef6b46e0a2510499e5b107f5920de4, type: 3}
+  buttonSound: {fileID: 8300000, guid: dbece0e01d0dee1488dd6dbd40ebb9f4, type: 3}
+  countdownSound: {fileID: 8300000, guid: 10c49b7c08f02794a925c9d90a8fba3f, type: 3}
+  victorySound: {fileID: 8300000, guid: eb04077781874104bb752c0f0c75ef89, type: 3}
+  gameOverSound: {fileID: 8300000, guid: 066bb5137eab0cf48b6d27c5edda7391, type: 3}
+  narrativeSound: {fileID: 8300000, guid: 464fa68b7f4a53b4ea3c1a9b761d4293, type: 3}
+  backgroundMusicLayer: {fileID: 8300000, guid: 0a286b0fc099f7d4bb682999fa3f2cf2, type: 3}
+  artifactPickupSound: {fileID: 8300000, guid: fd72e39cf2406244095efca37e25efb0, type: 3}
+  healthPickupSound: {fileID: 8300000, guid: 5501435c538a26848832257896485f71, type: 3}
+  sneakPickupSound: {fileID: 8300000, guid: 0534231466fdb8b4187afa63b122deb5, type: 3}
+  speedPickupSound: {fileID: 8300000, guid: 612bb7e80a9de7f4bbc633da00cceb2f, type: 3}
+  jumpPickupSound: {fileID: 8300000, guid: e3e37699a4e7fd244b7c1956606a841b, type: 3}
+  obstacleHitSound: {fileID: 8300000, guid: 7993420a9dd46aa45b602f2e8ffceed3, type: 3}
+  slowDownObstacleSound: {fileID: 8300000, guid: b69bcdfcc02124d4b90c7da7c90f06d4, type: 3}
+  curtainCutsceneSound: {fileID: 0}
+  securityDoorSound: {fileID: 0}
+  discoBallSound: {fileID: 0}
+  musicVolume: 0.5
+  sfxVolume: 0.8
+  narrativeVolume: 1
+--- !u!82 &456014656
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 456014654}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 1
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!4 &456014657
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 456014654}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &518300294
 GameObject:
   m_ObjectHideFlags: 0
@@ -532,6 +710,7 @@ GameObject:
   - component: {fileID: 518300297}
   - component: {fileID: 518300296}
   - component: {fileID: 518300298}
+  - component: {fileID: 518300299}
   m_Layer: 5
   m_Name: Upgrade1Button
   m_TagString: Untagged
@@ -641,6 +820,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &518300299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 518300294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ca0800484ca33449c44f2757a9b3c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSoundPlayer
 --- !u!1 &535005016
 GameObject:
   m_ObjectHideFlags: 0
@@ -1383,6 +1574,7 @@ GameObject:
   - component: {fileID: 680908723}
   - component: {fileID: 680908722}
   - component: {fileID: 680908724}
+  - component: {fileID: 680908725}
   m_Layer: 5
   m_Name: Trail2Button
   m_TagString: Untagged
@@ -1492,6 +1684,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &680908725
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 680908720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ca0800484ca33449c44f2757a9b3c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSoundPlayer
 --- !u!1 &684228382
 GameObject:
   m_ObjectHideFlags: 0
@@ -1641,6 +1845,7 @@ GameObject:
   - component: {fileID: 714724854}
   - component: {fileID: 714724853}
   - component: {fileID: 714724855}
+  - component: {fileID: 714724856}
   m_Layer: 5
   m_Name: Upgrade2Button
   m_TagString: Untagged
@@ -1750,6 +1955,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &714724856
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 714724851}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ca0800484ca33449c44f2757a9b3c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSoundPlayer
 --- !u!1 &858516342
 GameObject:
   m_ObjectHideFlags: 0
@@ -1762,6 +1979,7 @@ GameObject:
   - component: {fileID: 858516345}
   - component: {fileID: 858516344}
   - component: {fileID: 858516346}
+  - component: {fileID: 858516347}
   m_Layer: 5
   m_Name: Trail0Button
   m_TagString: Untagged
@@ -1871,6 +2089,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &858516347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 858516342}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ca0800484ca33449c44f2757a9b3c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSoundPlayer
 --- !u!1 &897942049
 GameObject:
   m_ObjectHideFlags: 0
@@ -2020,6 +2250,7 @@ GameObject:
   - component: {fileID: 912198392}
   - component: {fileID: 912198391}
   - component: {fileID: 912198393}
+  - component: {fileID: 912198394}
   m_Layer: 5
   m_Name: Trail1Button
   m_TagString: Untagged
@@ -2129,6 +2360,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &912198394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 912198389}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ca0800484ca33449c44f2757a9b3c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSoundPlayer
 --- !u!1 &1031816723
 GameObject:
   m_ObjectHideFlags: 0
@@ -2141,6 +2384,7 @@ GameObject:
   - component: {fileID: 1031816726}
   - component: {fileID: 1031816725}
   - component: {fileID: 1031816727}
+  - component: {fileID: 1031816728}
   m_Layer: 5
   m_Name: Upgrade3Button
   m_TagString: Untagged
@@ -2250,6 +2494,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1031816728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1031816723}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ca0800484ca33449c44f2757a9b3c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSoundPlayer
 --- !u!1 &1045504518
 GameObject:
   m_ObjectHideFlags: 0
@@ -2494,6 +2750,7 @@ GameObject:
   - component: {fileID: 1127282118}
   - component: {fileID: 1127282117}
   - component: {fileID: 1127282119}
+  - component: {fileID: 1127282120}
   m_Layer: 5
   m_Name: Trail3Button
   m_TagString: Untagged
@@ -2603,6 +2860,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1127282120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1127282115}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ca0800484ca33449c44f2757a9b3c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSoundPlayer
 --- !u!1 &1215065441
 GameObject:
   m_ObjectHideFlags: 0
@@ -3384,6 +3653,7 @@ GameObject:
   - component: {fileID: 1629992203}
   - component: {fileID: 1629992202}
   - component: {fileID: 1629992201}
+  - component: {fileID: 1629992205}
   m_Layer: 5
   m_Name: MainMenuButton
   m_TagString: Untagged
@@ -3493,6 +3763,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1629992205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1629992200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ca0800484ca33449c44f2757a9b3c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonSoundPlayer
 --- !u!1 &1690022233
 GameObject:
   m_ObjectHideFlags: 0
@@ -4415,3 +4697,4 @@ SceneRoots:
   - {fileID: 386879890}
   - {fileID: 1303004866}
   - {fileID: 562590069}
+  - {fileID: 456014657}

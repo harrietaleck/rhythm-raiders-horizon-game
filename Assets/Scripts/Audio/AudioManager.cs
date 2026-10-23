@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 /// Add to every scene via Tools → Setup Audio.
 ///
 /// Sounds:
-///   Background   — looping music during MainGameL1
+///   Background   — looping level music (or the player's jukebox pick) in gameplay
 ///   Button       — click SFX on any button
 ///   Countdown    — single countdown clip at level start
 ///   Victory      — plays on VictoryScene load
@@ -21,7 +21,8 @@ public class AudioManager : MonoBehaviour
 
     // ── Clips (assign in Inspector or via Setup Audio editor tool) ────────────
     [Header("Audio Clips")]
-    public AudioClip backgroundMusic;   // L1 — background_sound.mp3
+    public AudioClip rooftopMusic;      // L1 — Endless Sunrise (Infraction)
+    public AudioClip backgroundMusic;   // background_sound.mp3 (jukebox: Opera Groove)
     public AudioClip level2Music;       // L2 — level2museumSound.mp3
     public AudioClip level3Music;       // L3 — level3GameSound.mp3
     public AudioClip buttonSound;       // button_sound.mp3
@@ -128,6 +129,8 @@ public class AudioManager : MonoBehaviour
     {
         StopAllLoopingMusic();
         _narrativeSource.Stop();
+        // One-shots (stingers, cutscene hits) must not ring on into the next level.
+        if (_sfxSource != null) _sfxSource.Stop();
 
         switch (sceneName)
         {
@@ -136,12 +139,9 @@ public class AudioManager : MonoBehaviour
                 break;
 
             case "MainGameL1Opera":
-                // Rooftop soundtrack not delivered yet — level runs silent.
-                break;
-
             case "Level2Museum":
             case "Level3UndergroundDance":
-                PlayBackground(GetClipForScene(sceneName), useMusicLayer: false);
+                PlayBackground(GameplayClipFor(sceneName), useMusicLayer: false);
                 break;
 
             case "Level2IntroScene":
@@ -164,15 +164,50 @@ public class AudioManager : MonoBehaviour
     {
         return sceneName switch
         {
+            "MainGameL1Opera" => rooftopMusic != null ? rooftopMusic : backgroundMusic,
             "Level2Museum" => level2Music != null ? level2Music : backgroundMusic,
             "Level3UndergroundDance" => level3Music != null ? level3Music : backgroundMusic,
             _ => backgroundMusic
         };
     }
 
+    public static bool IsGameplayScene(string sceneName) =>
+        sceneName == "MainGameL1Opera" || sceneName == "Level2Museum" || sceneName == "Level3UndergroundDance";
+
+    /// <summary>Clip for a jukebox track id; null for "theme" or a missing clip.</summary>
+    public AudioClip ClipForTrack(string id)
+    {
+        return id switch
+        {
+            "sunrise" => rooftopMusic,
+            "opera" => backgroundMusic,
+            "museum" => level2Music,
+            "vault" => level3Music,
+            _ => null
+        };
+    }
+
+    /// <summary>The player's jukebox pick if they chose one, otherwise the level's own theme.</summary>
+    public AudioClip GameplayClipFor(string sceneName)
+    {
+        var picked = ClipForTrack(ShopData.SelectedMusicId);
+        return picked != null ? picked : GetClipForScene(sceneName);
+    }
+
+    /// <summary>Switches the music right away after the player picks a track in the jukebox.</summary>
+    public void ApplySelectedMusic()
+    {
+        string scene = SceneManager.GetActiveScene().name;
+        if (!IsGameplayScene(scene)) return;
+        var clip = GameplayClipFor(scene);
+        if (clip != null && _musicSource != null && _musicSource.clip == clip && _musicSource.isPlaying) return;
+        PlayBackground(clip, useMusicLayer: false);
+    }
+
+    /// <summary>Plays the current gameplay track (the jukebox pick or the level theme).</summary>
     public void PlayBackground()
     {
-        PlayBackground(backgroundMusic, useMusicLayer: true);
+        PlayBackground(GameplayClipFor(SceneManager.GetActiveScene().name), useMusicLayer: false);
     }
 
     public void PlayBackground(AudioClip clip, bool useMusicLayer)
@@ -205,6 +240,7 @@ public class AudioManager : MonoBehaviour
     void AbsorbClipReferencesFrom(AudioManager other)
     {
         if (other == null) return;
+        if (other.rooftopMusic != null) rooftopMusic = other.rooftopMusic;
         if (other.level2Music != null) level2Music = other.level2Music;
         if (other.level3Music != null) level3Music = other.level3Music;
         if (other.backgroundMusic != null) backgroundMusic = other.backgroundMusic;
@@ -265,8 +301,6 @@ public class AudioManager : MonoBehaviour
         _musicSource.loop   = false;
         _musicSource.Play();
 
-        if (backgroundMusic != null)
-            _sfxSource.PlayOneShot(backgroundMusic, musicVolume * 0.2f);
     }
 
     public void PlayGameOver()
@@ -336,6 +370,37 @@ public class AudioManager : MonoBehaviour
     public void PlaySpeedPickupSfx() => PlayClipOrFallback(speedPickupSound, 1.35f, 0.8f);
     public void PlayJumpPickupSfx() => PlayClipOrFallback(jumpPickupSound, 1.22f, 0.75f);
     public void PlayObstacleHitSfx() => PlayClipOrFallback(obstacleHitSound, 0.55f, 0.85f);
+
+    /// <summary>
+    /// Obstacle bump with its own sound: every laser (low laser, grid, fence, sweep) zaps with the
+    /// laser shot, drums boom with the bass drum; anything else uses the default hit sound.
+    /// </summary>
+    public void PlayObstacleHitSfx(GameObject obstacle)
+    {
+        var clip = ObstacleClip(obstacle);
+        if (clip != null && _sfxSource != null) { _sfxSource.PlayOneShot(clip, sfxVolume); return; }
+        PlayObstacleHitSfx();
+    }
+
+    /// <summary>The laser / drum obstacle clip for this object, or null.</summary>
+    public static AudioClip ObstacleClip(GameObject obstacle)
+    {
+        if (obstacle == null) return null;
+        var lib = FxLibrary.Get();
+        if (lib == null) return null;
+        var h = obstacle.GetComponent<HealthDecreaseObstacle>();
+        string n = ((h != null ? h.DisplayName : "") + " " + obstacle.name).ToLowerInvariant();
+        if (n.Contains("laser")) return lib.laserHitSound;
+        if (n.Contains("drum")) return lib.drumHitSound;
+        return null;
+    }
+
+    /// <summary>A laser / drum sound played at a point in the world (e.g. a drum starting to roll).</summary>
+    public void PlayObstacleSfxAt(AudioClip clip, Vector3 pos, float volume = 1f)
+    {
+        if (clip == null) return;
+        AudioSource.PlayClipAtPoint(clip, pos, sfxVolume * volume);
+    }
     static AudioClip _boom;
 
     /// <summary>Procedural grenade blast: noise crack plus a low rumble, decaying over ~1 s.</summary>

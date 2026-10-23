@@ -11,6 +11,7 @@ public class SetupAudio
 {
     // Audio clip paths
     private const string BACKGROUND = "Assets/Audios/background_sound.mp3";
+    private const string ROOFTOP_MUSIC = "Assets/Audios/Fashion EDM Technology by Infraction [No Copyright Music] _ Endless Sunrise.mp3";
     private const string LEVEL2_MUSIC = "Assets/Audios/level2museumSound.mp3";
     private const string LEVEL3_MUSIC = "Assets/Audios/level3GameSound.mp3";
     private const string BUTTON     = "Assets/Audios/button_sound.mp3";
@@ -32,6 +33,7 @@ public class SetupAudio
         "Assets/Scenes/Level2Museum.unity",
         "Assets/Scenes/Level3UndergroundDance.unity",
         "Assets/Scenes/DeathScene.unity",
+        "Assets/Scenes/ShopScene.unity",
         "Assets/Scenes/VictoryScene.unity",
     };
 
@@ -42,11 +44,18 @@ public class SetupAudio
             PickupSfxGenerator.GenerateAll();
 
         FixCountdownImport();
+        StreamMusic(ROOFTOP_MUSIC);
+        StreamMusic(BACKGROUND);
+        StreamMusic(LEVEL2_MUSIC);
+        StreamMusic(LEVEL3_MUSIC);
 
+        // Don't lose unsaved work in the open scene (Unity asks only if something is unsaved).
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
         string currentScene = EditorSceneManager.GetActiveScene().path;
 
         foreach (string scenePath in Scenes)
         {
+            if (!System.IO.File.Exists(scenePath)) continue;
             var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
             SetupSceneAudio(scene.name);
             EditorSceneManager.MarkSceneDirty(scene);
@@ -78,6 +87,7 @@ public class SetupAudio
             existing = go.AddComponent<AudioManager>();
         }
 
+        existing.rooftopMusic = AssetDatabase.LoadAssetAtPath<AudioClip>(ROOFTOP_MUSIC);
         existing.backgroundMusic = bgClip;
         existing.backgroundMusicLayer = bgClip;
         existing.level2Music = level2Clip;
@@ -154,6 +164,20 @@ public class SetupAudio
                 }
             }
         }
+    }
+
+    /// <summary>Long music tracks stream from disk instead of decompressing into memory.</summary>
+    private static void StreamMusic(string path)
+    {
+        var importer = AssetImporter.GetAtPath(path) as AudioImporter;
+        if (importer == null) return;
+        var settings = importer.defaultSampleSettings;
+        if (settings.loadType == AudioClipLoadType.Streaming) return;
+        settings.loadType = AudioClipLoadType.Streaming;
+        settings.compressionFormat = AudioCompressionFormat.Vorbis;
+        settings.quality = 0.7f;
+        importer.defaultSampleSettings = settings;
+        importer.SaveAndReimport();
     }
 
     private static void FixCountdownImport()
