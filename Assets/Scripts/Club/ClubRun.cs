@@ -88,6 +88,7 @@ public class ClubRun : MonoBehaviour
         _course.SetParent(transform, false);
 
         RunStats.Notes = 0;
+        ShopData.BeginRun();
         RunStats.Score = 0;
         RunStats.Stars = 0;
         RunStats.DailyCompleted = false;
@@ -135,7 +136,7 @@ public class ClubRun : MonoBehaviour
             string key = "Stars_L" + LevelProgress.CurrentLevel;
             if (stars > PlayerPrefs.GetInt(key, 0)) PlayerPrefs.SetInt(key, stars);
         }
-        ShopData.AddNotes(Notes);
+        ShopData.BankRunNotes(Notes);
     }
 
     // ── Course ───────────────────────────────────────────────────────────────
@@ -166,7 +167,68 @@ public class ClubRun : MonoBehaviour
     {
         float target = _player.position.z + lookAhead;
         while (_nextRowZ < target)
-            _nextRowZ += PlaceRow(_nextRowZ);
+        {
+            float z = _nextRowZ;
+            _nextRowZ += PlaceRow(z);
+            PlaceCrowd(z, _nextRowZ);
+        }
+    }
+
+    // ---- Dance floor crowd ------------------------------------------------------------
+    // The imported dance floor characters dance along both sides of the floor, outside the
+    // lanes and clear of the side DJ booths. Thin in the Lobby, packed on the Main Dance Floor.
+    readonly List<Vector3> _crowdBlocked = new List<Vector3>();   // x = side, y = zMin, z = zMax
+    float _crowdZ = -1000f;
+
+    void BlockCrowd(int side, float zMin, float zMax)
+    {
+        _crowdBlocked.Add(new Vector3(side, zMin, zMax));
+        // Dancers already placed there (the crowd runs a little ahead of the rows) step aside.
+        for (int i = _spawned.Count - 1; i >= 0; i--)
+        {
+            var go = _spawned[i];
+            if (go == null || go.name != "Dancer") continue;
+            var p = go.transform.position;
+            if ((p.x > 0f ? 1 : -1) == side && p.z > zMin && p.z < zMax) { Destroy(go); _spawned.RemoveAt(i); }
+        }
+    }
+
+    bool CrowdFree(int side, float z)
+    {
+        for (int i = _crowdBlocked.Count - 1; i >= 0; i--)
+        {
+            var b = _crowdBlocked[i];
+            if ((int)b.x == side && z > b.y && z < b.z) return false;
+        }
+        return true;
+    }
+
+    void PlaceCrowd(float zFrom, float zTo)
+    {
+        if (_crowdZ < zFrom) _crowdZ = zFrom;
+        float edge = Mathf.Abs(lanes[2]) + 1.6f;
+        while (_crowdZ < zTo)
+        {
+            float d = _crowdZ - _origin;
+            int section = SectionIndex(d);
+            float gap = section == 0 ? 7f : section == 1 ? 3.2f : 4f;
+            if (d > 15f)
+            {
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    if (section == 0 && Random.value < 0.5f) continue;
+                    float z = _crowdZ + Random.Range(-0.8f, 0.8f);
+                    if (!CrowdFree(side, z)) continue;
+                    float x = side * Random.Range(edge, edge + 1.3f);
+                    var facing = new Vector3(-side * Random.Range(0.4f, 1f), 0f, Random.Range(-1f, 0.3f));
+                    var t = DanceFloorCharacters.SpawnDancer(_course, new Vector3(x, 0f, z), facing, Random.Range(1.62f, 1.85f));
+                    if (t == null) return;
+                    Track(t.gameObject);
+                }
+            }
+            _crowdZ += gap;
+        }
+        _crowdBlocked.RemoveAll(b => b.z < _player.position.z - 20f);
     }
 
     void Cleanup()
@@ -185,6 +247,27 @@ public class ClubRun : MonoBehaviour
     }
 
     int SectionIndex(float d) => _hall != null ? _hall.SectionIndex(d) : d < 250f ? 0 : d < 550f ? 1 : 2;
+
+    float _lastCenterDj = -1000f, _lastSideDj = -1000f;
+    int _djSide = 1;
+
+    /// <summary>
+    /// Side DJ gig stations along the club walls from the Main Dance Floor: a booth with a
+    /// bouncer and a smoke machine that blasts fog across the lanes as the runner arrives.
+    /// Snapped to the start of a hall bay so they never overlap the wall speaker stacks.
+    /// </summary>
+    void MaybeSideDJ(float z, float d, int section)
+    {
+        if (section < 1 || d - _lastSideDj < 48f) return;
+        _lastSideDj = d;
+        var hall = FindAnyObjectByType<ClubHallStream>();
+        float bayOrigin = _origin + (hall != null ? hall.startZ : -12f);
+        float bayZ = bayOrigin + Mathf.Round((z - bayOrigin) / ClubHall.BayLength) * ClubHall.BayLength + 0.5f;
+        float x = Mathf.Abs(lanes[2]) + 3.4f;
+        Track(DJStation.Build(_course, new Vector3(_djSide * x, 0f, bayZ), _djSide, Mathf.RoundToInt(bayZ * 13f), Mathf.Abs(lanes[2])));
+        BlockCrowd(_djSide, bayZ - 2.6f, bayZ + 3.2f);
+        _djSide = -_djSide;
+    }
 
     float PlaceRow(float z)
     {
@@ -223,6 +306,32 @@ public class ClubRun : MonoBehaviour
         var others = new List<int>();
         for (int i = 0; i < lanes.Length; i++) if (i != safe) others.Add(i);
         Shuffle(others);
+
+        // DJ stage in the middle lane (Main Dance Floor on): a taser bodyguard guards one side
+        // lane and the stage's smoke machine fogs the floor at random. The other side lane is clear.
+        if (section >= 1 && d - _lastCenterDj > 120f && Random.value < (section == 1 ? 0.14f : 0.12f))
+        {
+            int guardSide = Random.value < 0.5f ? -1 : 1;
+            Track(DJStation.BuildCenter(_course, new Vector3(lanes[1], 0f, z + 4f), guardSide, Mathf.RoundToInt(z * 7f),
+                                        guardOffset: 4.6f, laneReach: 3f, smokeSpread: 9f));
+            BlockCrowd(guardSide, z + 0.5f, z + 6f);   // keep the bodyguard's side clear for the taser
+            int free = guardSide > 0 ? 0 : 2;
+            NoteLine(lanes[free], z - 3f, 5, 2.4f);
+            _lastCenterDj = d;
+            _lastSideDj = d;   // keep the side booths away from the stage
+            return spacing + 10f;
+        }
+
+        MaybeSideDJ(z, d, section);
+
+        // Disco ball drop: lands in a lane ahead and rolls back toward the runner.
+        if (section >= 1 && d > 230f && Random.value < (section == 1 ? 0.12f : 0.16f))
+        {
+            Track(ClubProps.DiscoBallDrop(_course, new Vector3(lanes[others[0]], 0f, z + 12f)));
+            if (section >= 2) PlaceHazard(section, new Vector3(lanes[others[1]], 0f, z));
+            NoteLine(lanes[safe], z - 4f, 4, 2.4f);
+            return spacing + 6f;
+        }
 
         // Falling light rig in the Bass Vault.
         if (section >= 2 && Random.value < 0.14f)

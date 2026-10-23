@@ -11148,6 +11148,10 @@ MonoBehaviour:
   Ground:
     serializedVersion: 2
     m_Bits: 64
+  stumbleDuration: 1.25
+  dashMultiplier: 1.35
+  dashDuration: 0.7
+  tumbleOverHeight: 1.7
 --- !u!143 &1564157122
 CharacterController:
   m_ObjectHideFlags: 0
@@ -11351,6 +11355,7 @@ MonoBehaviour:
   levelText: {fileID: 189840882}
   hitText: {fileID: 1282741056}
   hudFontSize: 46
+  panelScale: 0.68
 --- !u!114 &1564157131
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11367,6 +11372,7 @@ MonoBehaviour:
   speedDampTime: 0.1
   fallDeathY: -5
   voidFallDeathDelay: 0.35
+  stumbleClipOffset: 0.45
 --- !u!1 &1576059813
 GameObject:
   m_ObjectHideFlags: 0
@@ -12740,6 +12746,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29191079bc5f46e42b05a9c99b0f565d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+  rooftopMusic: {fileID: 8300000, guid: 96057f7f73df1ef4f929fc217f1b0a7e, type: 3}
   backgroundMusic: {fileID: 8300000, guid: 0a286b0fc099f7d4bb682999fa3f2cf2, type: 3}
   level2Music: {fileID: 8300000, guid: 41c1bb3283b99f247a2744579b2cbdbb, type: 3}
   level3Music: {fileID: 8300000, guid: 54ef6b46e0a2510499e5b107f5920de4, type: 3}
@@ -12774,10 +12781,10 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -14394,6 +14401,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 947acd002848314479e3b85bc2ecf7ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArtifactGoal
+  spinDegreesPerSecond: 120
+  bobHeight: 0.12
+  sinkSeconds: 0.5
 --- !u!54 &1944144899
 Rigidbody:
   m_ObjectHideFlags: 0

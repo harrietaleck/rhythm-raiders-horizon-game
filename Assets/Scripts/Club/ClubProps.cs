@@ -151,4 +151,87 @@ public static class ClubProps
         fall.hitBox = col;
         return obstacle;
     }
+
+    /// <summary>
+    /// A disco ball (Rolling Balls Sci-fi pack) that drops from the ceiling into a lane ahead,
+    /// bounces, then rolls toward the runner down that lane. A pulsing floor ring warns where it lands.
+    /// Get out of its lane.
+    /// </summary>
+    public static GameObject DiscoBallDrop(Transform parent, Vector3 floor)
+    {
+        const float radius = 0.95f;
+        var root = RooftopProps.Root("Rolling Disco Ball", parent, floor);
+        var t = root.transform;
+
+        var ring = Part(PrimitiveType.Cylinder, t, new Vector3(0f, 0.02f, 0f), new Vector3(2.6f, 0.005f, 2.6f),
+                        RooftopProps.Glow(new Color(1f, 0.2f, 0.8f, 0.0f)));
+        ring.name = "LandingRing";
+
+        var ball = new GameObject("Ball").transform;
+        ball.SetParent(t, false);
+        ball.localPosition = new Vector3(0f, ClubHall.CeilingY - 1.4f, 0f);
+        var lib = FxLibrary.Get();
+        GameObject model = null;
+        if (lib != null && lib.discoBalls != null && lib.discoBalls.Length > 0)
+        {
+            var prefab = lib.discoBalls[Random.Range(0, lib.discoBalls.Length)];
+            if (prefab != null)
+            {
+                model = Object.Instantiate(prefab, ball);
+                foreach (var c in model.GetComponentsInChildren<Collider>()) Object.Destroy(c);
+                foreach (var rb in model.GetComponentsInChildren<Rigidbody>()) Object.Destroy(rb);
+                foreach (var mb in model.GetComponentsInChildren<MonoBehaviour>()) Object.Destroy(mb);
+                model.transform.localPosition = Vector3.zero;
+                var rs = model.GetComponentsInChildren<Renderer>();
+                if (rs.Length > 0)
+                {
+                    var b = rs[0].bounds;
+                    foreach (var r in rs) b.Encapsulate(r.bounds);
+                    float size = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
+                    if (size > 0.01f) model.transform.localScale *= radius * 2f / size;
+                    // Centre the scaled model on the ball pivot.
+                    var b2 = rs[0].bounds;
+                    foreach (var r in rs) b2.Encapsulate(r.bounds);
+                    model.transform.position += ball.position - b2.center;
+                }
+            }
+        }
+        if (model == null)
+        {
+            Part(PrimitiveType.Sphere, ball, Vector3.zero, Vector3.one * radius * 2f, Lit(new Color(0.75f, 0.78f, 0.85f), 0.95f, 1f));
+        }
+        // Mirror glints so it reads as a disco ball.
+        for (int i = 0; i < 14; i++)
+        {
+            var dir = Random.onUnitSphere;
+            Part(PrimitiveType.Cube, ball, dir * radius * 1.01f, Vector3.one * 0.12f,
+                 RooftopProps.Glow(Color.Lerp(Color.white, i % 2 == 0 ? Magenta : new Color(0.35f, 0.85f, 1f), 0.4f)),
+                 Quaternion.LookRotation(dir).eulerAngles);
+        }
+        var light = new GameObject("Sparkle").AddComponent<Light>();
+        light.transform.SetParent(ball, false);
+        light.type = LightType.Point;
+        light.color = Magenta;
+        light.range = 6f;
+        light.intensity = 2.5f;
+        light.shadows = LightShadows.None;
+
+        root.tag = "HealthDEC";
+        var h = root.AddComponent<HealthDecreaseObstacle>();
+        h.damage = 12;
+        h.vibeDamage = 6;
+        h.displayName = "Rolling Disco Ball";
+        var col = ball.gameObject.AddComponent<SphereCollider>();
+        col.radius = radius;
+        col.enabled = false;
+        GameplayCollisionUtility.EnsureKinematicRigidbody(root);
+
+        var drop = root.AddComponent<FallingDiscoBall>();
+        drop.ball = ball;
+        drop.ring = ring.GetComponent<Renderer>();
+        drop.hitBox = col;
+        drop.radius = radius;
+        drop.sparkle = light;
+        return root;
+    }
 }

@@ -204,3 +204,119 @@ public class FallingRig : MonoBehaviour
         warning.SetPropertyBlock(_block);
     }
 }
+
+
+/// <summary>
+/// Drops a disco ball from the ceiling when the runner nears, then rolls it down its lane toward
+/// them. States: wait → warn (floor ring pulses) → fall (bounce) → roll → gone.
+/// </summary>
+public class FallingDiscoBall : MonoBehaviour
+{
+    static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+    public Transform ball;
+    public Renderer ring;
+    public Collider hitBox;
+    public Light sparkle;
+    public float radius = 0.95f;
+    public float triggerDistance = 34f;
+    public float warnTime = 0.6f;
+    public float rollSpeed = 6.5f;
+
+    Transform _player;
+    MaterialPropertyBlock _block;
+    int _state;
+    float _t, _vel;
+    bool _bounced;
+
+    void Start()
+    {
+        var go = GameObject.FindGameObjectWithTag("Player");
+        if (go != null) _player = go.transform;
+        _block = new MaterialPropertyBlock();
+    }
+
+    void Update()
+    {
+        if (_player == null || !GameManager.GameStarted) return;
+        float ahead = transform.position.z - _player.position.z;
+        if (sparkle != null) sparkle.color = Color.HSVToRGB(Mathf.Repeat(Time.time * 0.6f, 1f), 0.6f, 1f);
+
+        switch (_state)
+        {
+            case 0:
+                if (ahead < triggerDistance && ahead > 0f)
+                {
+                    _state = 1;
+                    _t = 0f;
+                    ClubRun.Instance?.IntroOnce("discoball", "DISCO BALL DROP - GET OUT OF ITS LANE!", new Color(1f, 0.35f, 0.85f));
+                }
+                break;
+            case 1:
+                _t += Time.deltaTime;
+                Ring(Mathf.Repeat(_t * 8f, 1f) < 0.5f ? 0.55f : 0.2f);
+                if (_t >= warnTime) { _state = 2; _vel = 0f; }
+                break;
+            case 2:
+                _vel += 26f * Time.deltaTime;
+                var p = ball.localPosition;
+                p.y -= _vel * Time.deltaTime;
+                ball.Rotate(Vector3.right, 180f * Time.deltaTime, Space.Self);
+                if (p.y <= radius)
+                {
+                    p.y = radius;
+                    if (!_bounced && _vel > 4f)
+                    {
+                        _bounced = true;
+                        _vel = -_vel * 0.3f;   // one small bounce
+                        hitBox.enabled = true;
+                        Ring(0f);
+                        ObstacleImpactFX.Thud(transform.position);
+                    }
+                    else
+                    {
+                        _state = 3;
+                    }
+                }
+                ball.localPosition = p;
+                break;
+            case 3:
+                hitBox.enabled = true;
+                transform.position += Vector3.back * rollSpeed * Time.deltaTime;
+                ball.Rotate(Vector3.right, -rollSpeed / radius * Mathf.Rad2Deg * Time.deltaTime, Space.World);
+                CheckRunover();
+                if (ahead < -25f) Destroy(gameObject);
+                break;
+        }
+    }
+
+    bool _hit;
+
+    // A moving ball can slip past the character controller's own contact check at closing
+    // speed, so test the overlap directly: touching the rolling ball always counts.
+    void CheckRunover()
+    {
+        if (_hit) return;
+        var c = ball.position;
+        var p = _player.position;
+        float dx = p.x - c.x, dz = p.z - c.z;
+        if (dx * dx + dz * dz > (radius + 0.55f) * (radius + 0.55f)) return;
+        var cc = _player.GetComponent<CharacterController>();
+        float feet = cc != null ? p.y - (cc.height * 0.5f - cc.center.y) : p.y - 1f;
+        if (feet > c.y + radius * 0.8f) return;   // cleared it
+        _hit = true;
+        var pickup = _player.GetComponent<PickupBase>();
+        var source = GetComponent<HealthDecreaseObstacle>();
+        if (pickup == null || source == null) return;
+        var point = Vector3.Lerp(c, p, 0.5f);
+        ObstacleImpactFX.Play(gameObject, point, _player);
+        pickup.HitByBlast(source, point);
+    }
+
+    void Ring(float alpha)
+    {
+        if (ring == null) return;
+        ring.GetPropertyBlock(_block);
+        _block.SetColor(BaseColor, new Color(1f, 0.2f, 0.8f, alpha));
+        ring.SetPropertyBlock(_block);
+    }
+}
