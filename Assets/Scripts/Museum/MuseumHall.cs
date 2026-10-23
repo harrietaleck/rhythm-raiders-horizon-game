@@ -60,6 +60,44 @@ public static class MuseumHall
     // ── Bay ─────────────────────────────────────────────────────────────────
 
     /// <summary>One 12 m bay of hall starting at <paramref name="z"/>.</summary>
+    /// <summary>The Oil Paintings pack faces -Z, so turn each one round to show its canvas.</summary>
+    public static float PaintingYaw = 180f;
+
+    /// <summary>
+    /// Hangs a framed oil painting (Customizable Frames Gallery: Oil Paintings) flat on a side wall,
+    /// fitted into a 3.6 x 2.6 m space. Returns false if the pack isn't set up.
+    /// </summary>
+    static bool HangOilPainting(Transform bay, Vector3 wallPoint, float side, int pick)
+    {
+        var lib = FxLibrary.Get();
+        if (lib == null || lib.paintings == null || lib.paintings.Length == 0) return false;
+        var prefab = lib.paintings[Mathf.Abs(pick) % lib.paintings.Length];
+        var holder = new GameObject("Painting").transform;
+        holder.SetParent(bay, false);
+        holder.localPosition = wallPoint;
+        // Face into the hall: the right wall (side +1) looks toward -X.
+        holder.localRotation = Quaternion.Euler(0f, side > 0 ? -90f : 90f, 0f) * Quaternion.Euler(0f, PaintingYaw, 0f);
+        var p = Object.Instantiate(prefab, holder);
+        p.transform.localPosition = Vector3.zero;
+        p.transform.localRotation = Quaternion.identity;
+        foreach (var c in p.GetComponentsInChildren<Collider>(true)) Object.Destroy(c);
+        var rs = p.GetComponentsInChildren<Renderer>();
+        if (rs.Length == 0) return true;
+        var b = rs[0].bounds;
+        foreach (var r in rs) b.Encapsulate(r.bounds);
+        float across = Mathf.Max(0.01f, Mathf.Abs(side) > 0 ? b.size.z : b.size.x);
+        float fit = Mathf.Min(3.6f / across, 2.6f / Mathf.Max(0.01f, b.size.y));
+        p.transform.localScale *= fit;
+        b = rs[0].bounds;
+        foreach (var r in rs) b.Encapsulate(r.bounds);
+        // Centre on the wall point, back of the frame flush against the wall.
+        var target = bay.TransformPoint(wallPoint);
+        var shift = target - b.center;
+        shift.x += -side * (b.extents.x + 0.02f);
+        p.transform.position += shift;
+        return true;
+    }
+
     public static GameObject Bay(Transform parent, float z, int index, Texture ceilingTexture, IList<GameObject> instruments)
     {
         var root = RooftopProps.Root("MuseumBay_" + index, parent, new Vector3(0f, 0f, z));
@@ -93,13 +131,18 @@ public static class MuseumHall
         {
             float x = side * (HalfWidth - 0.12f);
             var canvas = Canvases[(index * 2 + (side > 0 ? 1 : 0)) % Canvases.Length];
-            Part(PrimitiveType.Cube, t, new Vector3(x, 4f, mid), new Vector3(0.12f, 2.8f, 3.8f), gold);
-            Part(PrimitiveType.Cube, t, new Vector3(x - side * 0.08f, 4f, mid), new Vector3(0.04f, 2.3f, 3.3f), Lit(canvas, 0.1f));
-            Part(PrimitiveType.Cube, t, new Vector3(x - side * 0.1f, 4f, mid), new Vector3(0.02f, 1.2f, 1.2f),
-                 Lit(Color.Lerp(canvas, Color.white, 0.35f), 0.1f), new Vector3(45f, 0f, 0f));
+            bool oil = HangOilPainting(t, new Vector3(x, 4f, mid), side, index * 2 + (side > 0 ? 1 : 0));
+            if (!oil)
+            {
+                Part(PrimitiveType.Cube, t, new Vector3(x, 4f, mid), new Vector3(0.12f, 2.8f, 3.8f), gold);
+                Part(PrimitiveType.Cube, t, new Vector3(x - side * 0.08f, 4f, mid), new Vector3(0.04f, 2.3f, 3.3f), Lit(canvas, 0.1f));
+                Part(PrimitiveType.Cube, t, new Vector3(x - side * 0.1f, 4f, mid), new Vector3(0.02f, 1.2f, 1.2f),
+                     Lit(Color.Lerp(canvas, Color.white, 0.35f), 0.1f), new Vector3(45f, 0f, 0f));
+            }
             Part(PrimitiveType.Cube, t, new Vector3(x - side * 0.3f, 5.75f, mid), new Vector3(0.25f, 0.12f, 1.6f), gold);
-            Part(PrimitiveType.Cube, t, new Vector3(x - side * 0.06f, 4.6f, mid), new Vector3(0.02f, 2.6f, 4.2f),
-                 RooftopProps.Glow(new Color(1f, 0.85f, 0.55f, 0.12f)));
+            if (!oil)
+                Part(PrimitiveType.Cube, t, new Vector3(x - side * 0.06f, 4.6f, mid), new Vector3(0.02f, 2.6f, 4.2f),
+                     RooftopProps.Glow(new Color(1f, 0.85f, 0.55f, 0.12f)));
         }
 
         // Carpet runner over the lanes with gold trim, and cyan guide lights at the skirting.

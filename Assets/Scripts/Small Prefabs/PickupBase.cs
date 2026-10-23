@@ -209,8 +209,9 @@ public class PickupBase : MonoBehaviour
         if (!_hitObstacles.Add(root.GetInstanceID())) return;
 
         Debug.Log("Player hit an obstacle: " + (obstacle != null ? obstacle.DisplayName : root.name));
-        AudioManager.Instance?.PlayObstacleHitSfx();
+        AudioManager.Instance?.PlayObstacleHitSfx(root);
         if (playFx) ObstacleImpactFX.Play(root, point, transform);
+        root.SendMessage("OnPlayerHit", point, SendMessageOptions.DontRequireReceiver);
         if (obstacle != null)
             ApplyObstacleDamage(obstacle);
         else

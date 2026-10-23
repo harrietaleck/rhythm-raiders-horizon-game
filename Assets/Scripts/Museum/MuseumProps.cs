@@ -104,9 +104,16 @@ public static class MuseumProps
         return Hazard(root, new Vector3(0f, 0.55f, 0f), new Vector3(3.2f, 0.9f, 0.4f), 8, 3);
     }
 
-    /// <summary>Marble statue on a plinth blocking a lane — dodge it.</summary>
+    /// <summary>
+    /// Statue on a plinth blocking a lane — dodge it. Uses the Greek Statue / HQ Lion Statue
+    /// models; bump into one and it topples, smashes on the carpet and throws up dust.
+    /// </summary>
     public static GameObject Statue(Transform parent, Vector3 pos)
     {
+        var lib = FxLibrary.Get();
+        if (lib != null && lib.statues != null && lib.statues.Length > 0)
+            return ModelStatue(parent, pos, lib.statues[Random.Range(0, lib.statues.Length)]);
+
         var root = RooftopProps.Root("Statue", parent, pos);
         var t = root.transform;
         var marble = MuseumHall.Lit(new Color(0.86f, 0.84f, 0.8f), 0.75f);
@@ -116,6 +123,50 @@ public static class MuseumProps
         Part(PrimitiveType.Sphere, t, new Vector3(0f, 3.15f, 0f), Vector3.one * 0.6f, marble);
         Part(PrimitiveType.Cube, t, new Vector3(0f, 0.015f, 0f), new Vector3(3f, 0.01f, 3f), RooftopProps.Glow(new Color(1f, 0.12f, 0.08f, 0.15f)));
         return Hazard(root, new Vector3(0f, 1.6f, 0f), new Vector3(2.2f, 3.2f, 2.2f), 15, 5, trigger: false);
+    }
+
+    static GameObject ModelStatue(Transform parent, Vector3 pos, GameObject prefab)
+    {
+        bool lion = prefab.name.ToLowerInvariant().Contains("lion");
+        var root = RooftopProps.Root(lion ? "Statue (Lion)" : "Statue (Greek)", parent, pos);
+        var t = root.transform;
+        var marble = MuseumHall.Lit(new Color(0.86f, 0.84f, 0.8f), 0.75f);
+        const float plinthH = 0.55f;
+        Part(PrimitiveType.Cube, t, new Vector3(0f, plinthH * 0.5f, 0f), new Vector3(2.2f, plinthH, 2.2f), marble);
+        Part(PrimitiveType.Cube, t, new Vector3(0f, plinthH + 0.02f, 0f), new Vector3(2.3f, 0.05f, 2.3f), RooftopProps.Glow(Red));
+        Part(PrimitiveType.Cube, t, new Vector3(0f, 0.015f, 0f), new Vector3(3f, 0.01f, 3f), RooftopProps.Glow(new Color(1f, 0.12f, 0.08f, 0.15f)));
+
+        // Pivot at the plinth's back edge so the statue tips away from the runner.
+        var pivot = new GameObject("Topple Pivot").transform;
+        pivot.SetParent(t, false);
+        pivot.localPosition = new Vector3(0f, plinthH, 0.9f);
+        var model = Object.Instantiate(prefab, pivot);
+        model.name = "Model";
+        foreach (var c in model.GetComponentsInChildren<Collider>(true)) Object.Destroy(c);
+        foreach (var mb in model.GetComponentsInChildren<MonoBehaviour>(true)) Object.Destroy(mb);
+        model.transform.localRotation = lion ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.Euler(0f, 180f, 0f);
+        float targetH = lion ? 2.1f : 2.7f;
+        var rs = model.GetComponentsInChildren<Renderer>();
+        float height = targetH;
+        if (rs.Length > 0)
+        {
+            var bb = rs[0].bounds;
+            foreach (var r in rs) bb.Encapsulate(r.bounds);
+            float fit = targetH / Mathf.Max(0.001f, bb.size.y);
+            float wide = Mathf.Max(bb.size.x, bb.size.z) * fit;
+            if (wide > 2.2f) fit *= 2.2f / wide;   // keep it on the plinth
+            model.transform.localScale *= fit;
+            bb = rs[0].bounds;
+            foreach (var r in rs) bb.Encapsulate(r.bounds);
+            var top = t.TransformPoint(new Vector3(0f, plinthH, 0f));
+            model.transform.position += new Vector3(top.x - bb.center.x, top.y - bb.min.y, top.z - bb.center.z);
+            height = bb.size.y;
+        }
+        var go = Hazard(root, new Vector3(0f, (plinthH + height) * 0.5f, 0f), new Vector3(2.2f, plinthH + height, 2.2f), 15, 5, trigger: false);
+        var breakable = root.AddComponent<BreakableStatue>();
+        breakable.pivot = pivot;
+        breakable.stone = lion ? new Color(0.3f, 0.29f, 0.27f) : new Color(0.33f, 0.27f, 0.19f);   // dark stone lion, bronze Greek figure
+        return go;
     }
 
     /// <summary>Drum that rolls down its lane toward the player once they are close.</summary>

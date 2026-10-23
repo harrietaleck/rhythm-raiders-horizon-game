@@ -39,6 +39,7 @@ public static class Grenade
     public static void Explode(Vector3 pos)
     {
         ObstacleImpactFX.Explosion(pos, BlastRadius);
+        SmokeCloud.Spawn(pos, new Vector3(3f, 1.6f, 3f), 0.4f, new Color(0.55f, 0.55f, 0.52f, 0.8f), Vector3.up * 0.3f);
         AudioManager.Instance?.PlayExplosionSfx();
     }
 
@@ -67,6 +68,7 @@ public class GuardGrenade : MonoBehaviour
     Renderer _led;
     BlastRing _ring;
     HealthDecreaseObstacle _source;
+    ParticleSystem _smoke;
 
     public static GuardGrenade Throw(Vector3 from, Vector3 landAt, float flight, float fuse)
     {
@@ -91,6 +93,7 @@ public class GuardGrenade : MonoBehaviour
         trail.endWidth = 0f;
         trail.material = RooftopProps.Glow(new Color(1f, 0.85f, 0.6f, 0.35f));
         trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        g._smoke = SmokeCloud.Trail(go.transform, 0.7f, 90f);   // smoke streams behind it in flight
         return g;
     }
 
@@ -122,11 +125,20 @@ public class GuardGrenade : MonoBehaviour
         var trail = GetComponent<TrailRenderer>();
         if (trail != null) trail.emitting = false;
         _ring = BlastRing.Create(_to, Grenade.BlastRadius);
+        if (_smoke != null)
+        {
+            // Lying on the floor the fuse keeps smoking, thicker as it burns down.
+            var em = _smoke.emission;
+            em.rateOverTime = 45f;
+            var main = _smoke.main;
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
+        }
         ObstacleImpactFX.Thud(_to);
     }
 
     void Detonate()
     {
+        SmokeCloud.Release(_smoke);
         Grenade.Explode(transform.position);
         if (GameManager.GameStarted) Grenade.BlastPlayer(transform.position, _source);
         if (_ring != null) Destroy(_ring.gameObject);

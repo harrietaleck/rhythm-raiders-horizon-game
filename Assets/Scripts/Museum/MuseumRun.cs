@@ -118,6 +118,7 @@ public class MuseumRun : MonoBehaviour
         PlantedGrenadeBlink.IntroShown = false;
         PatrolGuard.ResetIntros();
         RunStats.Notes = 0;
+        ShopData.BeginRun();
         RunStats.Score = 0;
         RunStats.Stars = 0;
         RunStats.DailyCompleted = false;
@@ -165,7 +166,7 @@ public class MuseumRun : MonoBehaviour
             string key = "Stars_L" + LevelProgress.CurrentLevel;
             if (stars > PlayerPrefs.GetInt(key, 0)) PlayerPrefs.SetInt(key, stars);
         }
-        ShopData.AddNotes(Notes);
+        ShopData.BankRunNotes(Notes);
     }
 
     // ── Course ───────────────────────────────────────────────────────────────
@@ -318,7 +319,7 @@ public class MuseumRun : MonoBehaviour
         else
             go = r < 0.3f ? MuseumProps.LowLaser(_course, pos) : r < 0.7f ? MuseumProps.LaserGrid(_course, pos) : MuseumProps.Statue(_course, pos);
 
-        if (go.name != "Statue")
+        if (!go.name.StartsWith("Statue"))
             go.transform.localScale = new Vector3(hazardWidthScale, 1f, 1f);
         Track(go);
     }

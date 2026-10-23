@@ -24,6 +24,8 @@ public class RollingDrum : MonoBehaviour
         {
             _rolling = true;
             MuseumRun.Instance?.Flash("ROLLING DRUM!", new Color(1f, 0.35f, 0.25f), 1f);
+            var lib = FxLibrary.Get();
+            if (lib != null) AudioManager.Instance?.PlayObstacleSfxAt(lib.drumHitSound, _player.position + Vector3.forward * 6f, 0.9f);
         }
         if (!_rolling) return;
 
