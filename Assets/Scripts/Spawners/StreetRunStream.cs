@@ -47,6 +47,7 @@ public class StreetRunStream : MonoBehaviour
         _origin = segment.transform.position;
         _startZ = segmentStartZ;
         _surfaceY = MeasureSurface(segment);
+        MeasureRoofEdges(segment);
         RooftopProps.SteelBars = steelBarPrefab;
 
         HideTemplates(advantages);
@@ -115,6 +116,7 @@ public class StreetRunStream : MonoBehaviour
             if (z >= _nextSpecialZ && z + 14f < segEnd)
             {
                 clearUntil = z + PlaceSpecial(seg.transform, z, district);
+                _specialZones.Add(new Vector2(z - 4f, clearUntil + 4f));
                 _nextSpecialZ = z + Mathf.Lerp(150f, 85f, Mathf.Clamp01(distance / 900f)) + Random.Range(0f, 40f);
                 continue;
             }
@@ -122,6 +124,21 @@ public class StreetRunStream : MonoBehaviour
             float t = Mathf.Clamp01(distance / rampDistance);
             float hazardChance = Mathf.Lerp(hazardChanceStart, hazardChanceMax, t);
             float rowZ = z + Random.Range(-2f, 2f);
+
+            // Centre DJ stage with a taser bodyguard on one side; the other side lane is clear.
+            if (distance > centerDjFrom && distance - _lastCenterDj > centerDjGap && Random.value < centerDjChance && z + 10f < segEnd)
+            {
+                int guardSide = Random.value < 0.5f ? -1 : 1;
+                float outer = 0f;
+                foreach (float l in lanes) outer = Mathf.Max(outer, Mathf.Abs(l));
+                DJStation.BuildCenter(seg.transform, new Vector3(0f, _surfaceY, rowZ), guardSide, Mathf.RoundToInt(rowZ * 7f));
+                NoteLine(seg.transform, -guardSide * outer, rowZ - 7f, 4);
+                RunDirector.Instance?.RegisterHazardRow(rowZ);
+                _specialZones.Add(new Vector2(rowZ - 10f, rowZ + 10f));
+                _lastCenterDj = distance;
+                clearUntil = z + rowSpacing * 0.5f;
+                continue;
+            }
             float laneX = PickLane();
 
             if (Random.value < hazardChance)
@@ -146,6 +163,94 @@ public class StreetRunStream : MonoBehaviour
                     RooftopProps.Pigeons(seg.transform, new Vector3(FreeLane(laneX, laneX), _surfaceY, rowZ + 5f));
             }
         }
+
+        PlaceDJStations(seg, segStart, segEnd);
+    }
+
+    // ── DJ gig stations on the roof sides ────────────────────────────────────
+
+    [Header("DJ gig stations")]
+    [Tooltip("A DJ booth beside the lanes roughly this often (metres).")]
+    public float djEvery = 55f;
+    [Tooltip("No booths before this far into the run.")]
+    public float djFrom = 40f;
+
+    [Tooltip("Centre-of-track DJ stages (with a taser bodyguard) from this far into the run.")]
+    public float centerDjFrom = 160f;
+    public float centerDjGap = 130f;
+    [Range(0f, 1f)] public float centerDjChance = 0.16f;
+    float _lastCenterDj = -1000f;
+
+    readonly List<Vector2> _specialZones = new List<Vector2>();
+    float _roofLeft = -8f, _roofRight = 8f;
+    float _nextDjZ = float.MinValue;
+    int _djSide = 1;
+
+    void MeasureRoofEdges(GameObject seg)
+    {
+        float left = 0f, right = 0f;
+        bool found = false;
+        foreach (var col in seg.GetComponentsInChildren<Collider>())
+        {
+            if (col.isTrigger || col.gameObject.layer != 6) continue;
+            var b = col.bounds;
+            if (Mathf.Abs(b.max.y - _surfaceY) > 0.35f || b.min.x > 0f || b.max.x < 0f) continue;
+            left = found ? Mathf.Min(left, b.min.x) : b.min.x;
+            right = found ? Mathf.Max(right, b.max.x) : b.max.x;
+            found = true;
+        }
+        if (found) { _roofLeft = left; _roofRight = right; }
+        Debug.Log($"[StreetStream] Roof edges x {_roofLeft:F1} .. {_roofRight:F1} (DJ stations at the sides)");
+    }
+
+    void PlaceDJStations(GameObject seg, float segStart, float segEnd)
+    {
+        if (_nextDjZ == float.MinValue) _nextDjZ = _startZ + djFrom;
+        while (_nextDjZ < segEnd)
+        {
+            float z = _nextDjZ;
+            _nextDjZ += djEvery + Random.Range(-8f, 8f);
+            if (z < segStart + 3f || z > segEnd - 3f) continue;
+            bool clash = false;
+            foreach (var zone in _specialZones)
+                if (z > zone.x - 3f && z < zone.y + 3f) { clash = true; break; }
+            if (clash || NearFragment(z)) continue;
+
+            int side = _djSide;
+            _djSide = -_djSide;
+            float edge = side > 0 ? _roofRight : -_roofLeft;
+            float laneEdge = 0f;
+            foreach (float l in lanes) laneEdge = Mathf.Max(laneEdge, Mathf.Abs(l));
+            float minX = laneEdge + 2.6f;   // booth inner face stays clear of the outer lane
+            float x = FreeBoothX(seg, side, z, edge - 1.4f, minX);
+            if (x < minX) continue;   // no room on this side here (building wall, gantry...)
+            DJStation.Build(seg.transform, new Vector3(side * x, _surfaceY, z), side, Mathf.RoundToInt(z * 13f));
+        }
+    }
+
+    /// <summary>
+    /// Slides the booth in from the roof edge until its footprint is clear of the segment's
+    /// walls and props (checked against renderer bounds, so it works on freshly spawned copies).
+    /// Returns a value below minX when there is no room.
+    /// </summary>
+    float FreeBoothX(GameObject seg, int side, float z, float startX, float minX)
+    {
+        var renderers = seg.GetComponentsInChildren<Renderer>();
+        for (float x = startX; x >= minX; x -= 0.25f)
+        {
+            var booth = new Bounds(new Vector3(side * x, _surfaceY + 1.9f, z), new Vector3(2.6f, 3.4f, 4.4f));
+            bool blocked = false;
+            foreach (var r in renderers)
+            {
+                if (r == null || !r.enabled) continue;
+                var b = r.bounds;
+                if (b.max.y < _surfaceY + 0.3f) continue;          // the roof floor itself
+                if (b.size.x > 30f && b.size.z > 30f) continue;    // huge backdrop planes
+                if (b.Intersects(booth)) { blocked = true; break; }
+            }
+            if (!blocked) return x;
+        }
+        return minX - 1f;
     }
 
     [Header("Set pieces")]

@@ -147,6 +147,7 @@ public class RunDirector : MonoBehaviour
         EnemyBase.SurgeWarned += OnSurgeWarned;
 
         RunStats.Notes = 0;
+        ShopData.BeginRun();
         RunStats.Score = 0;
         RunStats.Stars = 0;
         RunStats.DailyCompleted = false;
@@ -388,23 +389,9 @@ public class RunDirector : MonoBehaviour
 
     void UpdatePowers()
     {
-        bool bubble = Time.time < _bubbleUntil;
-        if (bubble && _bubbleFx == null)
-        {
-            _bubbleFx = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            Destroy(_bubbleFx.GetComponent<Collider>());
-            _bubbleFx.name = "ShieldBubble";
-            _bubbleFx.GetComponent<Renderer>().sharedMaterial = RooftopProps.Mat(new Color(0.35f, 0.85f, 1f, 0.25f), 1.5f, true);
-            _bubbleFx.transform.SetParent(_player, false);
-            _bubbleFx.transform.localPosition = new Vector3(0f, 0.1f, 0f);
-            _bubbleFx.transform.localScale = Vector3.one * 2.6f;
-        }
-        else if (!bubble && _bubbleFx != null)
-        {
-            Destroy(_bubbleFx);
-        }
-        if (_bubbleFx != null)
-            _bubbleFx.transform.localScale = Vector3.one * (2.5f + Mathf.Sin(Time.time * 6f) * 0.08f);
+        // The shield bubble has no marker on the runner (it blocked the view); the HUD shows
+        // "BUBBLE Ns" while it lasts and the player simply can't be hurt.
+        if (_bubbleFx != null && Time.time >= _bubbleUntil) Destroy(_bubbleFx);
     }
 
     void SpawnSmoke(Vector3 at, float seconds, int puffs = 7, float spread = 1f, Transform follow = null,
@@ -484,7 +471,7 @@ public class RunDirector : MonoBehaviour
     {
         if (_banked || !_started) return;
         _banked = true;
-        ShopData.AddNotes(_notes);
+        ShopData.BankRunNotes(_notes);
     }
 
     string DailyLine()

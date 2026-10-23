@@ -108,6 +108,9 @@ public static class ObstacleImpactFX
     static Kind Classify(string n)
     {
         if (n.Contains("grenade")) return Kind.Explosive;
+        if (n.Contains("taser")) return Kind.Electric;
+        if (n.Contains("disco")) return Kind.Metal;
+        if (n.Contains("booth")) return Kind.Speaker;
         if (n.Contains("laser")) return Kind.Laser;
         if (n.Contains("speaker") || n.Contains("bass")) return Kind.Speaker;
         if (n.Contains("statue") || n.Contains("stone") || n.Contains("pillar")) return Kind.Stone;

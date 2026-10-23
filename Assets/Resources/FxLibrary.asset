@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81a4af0358d8b184bb86a22e991bb480, type: 3}
+  m_Name: FxLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::FxLibrary
+  fogPrefab: {fileID: 9025435444988080512, guid: c4cc3cc9ac499864f882426702a19b05, type: 3}
+  fogMaterial: {fileID: 2100000, guid: 538e7e80c7d0a894f8037ea8dc19a54a, type: 2}
+  discoBalls:
+  - {fileID: 7680529403145111814, guid: 853665bfc6ac8324784ed3fc27bb7f73, type: 3}
+  - {fileID: 1246918758467806929, guid: d7c5ce0a5be36014689a9a18d764c26e, type: 3}
+  - {fileID: 3661194903258598888, guid: 52d8e75ae31601f489af26fa70539261, type: 3}
+  - {fileID: 809034063130156681, guid: befff11214a7b104cace0b47fa934c5f, type: 3}
+  - {fileID: 1357655287505828748, guid: 976e75d82ce31c6479717e8a71be3f1f, type: 3}
+  - {fileID: 1156680540414199998, guid: c9250b6a9581ab146850127ee38c6631, type: 3}
+  - {fileID: 7393685336832636115, guid: bc7fd9bd997d8904db4bae15918a9899, type: 3}
+  - {fileID: 7318227769529052288, guid: a66d056a0e0553246815bfb823bf89e2, type: 3}
+  dancers:
+  - {fileID: 919132149155446097, guid: 468e0743b177eec439e16b01d122f94b, type: 3}
+  - {fileID: 919132149155446097, guid: adacc60b48800124293cf26ce58b79c4, type: 3}
+  - {fileID: 919132149155446097, guid: baeffefde2e3a1a4aaf8db0fbea35854, type: 3}
+  - {fileID: 919132149155446097, guid: 5d5cada858d00354aa633350a0ecd0d3, type: 3}
+  - {fileID: 919132149155446097, guid: b5c44e4d9ff7c56489df5dfcc34a5080, type: 3}
+  - {fileID: 919132149155446097, guid: b919cdeadab33b845adb7584df300a09, type: 3}
+  dj: {fileID: 919132149155446097, guid: 450f3d6d5647c3e448c4ccf300484fcb, type: 3}
+  bodyguard: {fileID: 919132149155446097, guid: 3ede443ab6fe68341afa1022244cdb8a, type: 3}
+  crowdController: {fileID: 9100000, guid: 94670006c1b663b40a8c0b63bec498e2, type: 2}
+  djController: {fileID: 9100000, guid: 4bb9ed0e613571d43a52a9974fb66027, type: 2}
+  bodyguardController: {fileID: 9100000, guid: f366ace0530b94b4faf0dd6f586f8bac, type: 2}
+  danceStates:
+  - Dance0
+  - Dance1
+  - Dance2
+  - Dance3
+  - Dance4
+  backpack: {fileID: 8353971290506875543, guid: 0db38c38710ec1d48840e958156e8a86, type: 3}
+  statues:
+  - {fileID: 7590453392888686472, guid: c58829182f121f24aa5317a22823ca57, type: 3}
+  - {fileID: 116990, guid: 311e54faa8a36f44ba713b6638fdf534, type: 3}
+  paintings:
+  - {fileID: 3588568805350003889, guid: 224912cc19f39784fa9fa2d727e70069, type: 3}
+  - {fileID: 2210663990500582948, guid: c02a39b7e9c2d2b448d9f082927bb50d, type: 3}
+  - {fileID: 8420742024679213807, guid: c2e57ac18c36e3c448c9e6e6d37310c7, type: 3}
+  - {fileID: 694395990687281074, guid: ba674a54ad5c11e4e83cc86c8b81375b, type: 3}
+  - {fileID: 478825781646161427, guid: d60515fe893250a4586c690b196ddc42, type: 3}
+  - {fileID: 8640234759578688973, guid: f434d3b8d6355ca4fbf6526460d4d36c, type: 3}
+  - {fileID: 4320982708228378309, guid: 47deaedfe3b081f44bb7ee422b93a3f1, type: 3}
+  laserHitSound: {fileID: 8300000, guid: bc409f2f4ce3de14bbec9349b993b80d, type: 3}
+  drumHitSound: {fileID: 8300000, guid: 40de273afee991b48bfdeeaa6dbdc855, type: 3}

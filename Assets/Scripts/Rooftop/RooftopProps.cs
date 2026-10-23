@@ -236,6 +236,28 @@ public static class RooftopProps
     }
 
     /// <summary>Full-width gap between buildings. Optional zip-line over one lane.</summary>
+    /// <summary>
+    /// Low steel kerb along a roof edge: angle-iron plate on the lip, short posts and a top rail.
+    /// Visual only (no collider) and knee-high, so it marks the edge without blocking the jump.
+    /// side = -1 for the near edge (bars face the runner), +1 for the far edge.
+    /// </summary>
+    static void EdgeBars(Transform parent, float width, float z, float side)
+    {
+        var steel = Mat(new Color(0.42f, 0.44f, 0.48f), 0f);
+        var dark = Mat(new Color(0.12f, 0.12f, 0.14f), 0f);
+        float w = width - 0.4f;
+        Part(PrimitiveType.Cube, parent, new Vector3(0f, 0.12f, z), new Vector3(w, 0.24f, 0.08f), dark, false);
+        Part(PrimitiveType.Cube, parent, new Vector3(0f, 0.26f, z), new Vector3(w, 0.05f, 0.18f), steel, false);
+        int posts = Mathf.Max(2, Mathf.RoundToInt(w / 1.4f) + 1);
+        for (int i = 0; i < posts; i++)
+        {
+            float x = -w * 0.5f + w * i / (posts - 1);
+            Part(PrimitiveType.Cube, parent, new Vector3(x, 0.32f, z), new Vector3(0.08f, 0.64f, 0.08f), steel, false);
+        }
+        Part(PrimitiveType.Cube, parent, new Vector3(0f, 0.64f, z), new Vector3(w, 0.07f, 0.07f), steel, false);
+        Part(PrimitiveType.Cube, parent, new Vector3(0f, 0.42f, z), new Vector3(w, 0.04f, 0.04f), steel, false);
+    }
+
     public static GameObject Gap(Transform parent, Vector3 center, float length, bool zipLine, float zipLaneX, bool crumble = false)
     {
         var root = Root(crumble ? "Crumbling Roof" : "Roof Gap", parent, center);
@@ -256,6 +278,9 @@ public static class RooftopProps
             var lip = Glow(new Color(1f, 0.1f, 0.06f, 0.95f));
             glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.08f, nearEdge - 0.4f), new Vector3(width, 0.16f, 0.8f), lip, false).GetComponent<Renderer>());
             glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.08f, -nearEdge + 0.4f), new Vector3(width, 0.16f, 0.8f), lip, false).GetComponent<Renderer>());
+            // Steel edge bars on both red lips so the end of each building reads clearly.
+            EdgeBars(root.transform, width, nearEdge - 0.05f, -1f);
+            EdgeBars(root.transform, width, -nearEdge + 0.05f, 1f);
             var haze = Glow(new Color(1f, 0.04f, 0.02f, 0.45f));
             glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, -0.4f, 0), new Vector3(width, 0.02f, length - 0.2f), haze, false).GetComponent<Renderer>());
             glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.6f, nearEdge + 0.05f), new Vector3(width, 1.2f, 0.04f), Glow(new Color(1f, 0.06f, 0.03f, 0.22f)), false).GetComponent<Renderer>());
@@ -374,6 +399,33 @@ public static class RooftopProps
     }
 
     /// <summary>Zip-line between two posts. Running into the start handle carries the player.</summary>
+    /// <summary>
+    /// A sagging rope between two local points (catenary-ish curve drawn with a LineRenderer),
+    /// with a subtle braid twist so it reads as rope rather than a cable.
+    /// </summary>
+    public static LineRenderer Rope(Transform parent, Vector3 a, Vector3 b, float sag, float width, Material mat)
+    {
+        var go = new GameObject("Rope");
+        go.transform.SetParent(parent, false);
+        var lr = go.AddComponent<LineRenderer>();
+        lr.useWorldSpace = false;
+        const int points = 28;
+        lr.positionCount = points;
+        for (int i = 0; i < points; i++)
+        {
+            float t = i / (float)(points - 1);
+            var p = Vector3.Lerp(a, b, t);
+            p.y -= sag * 4f * t * (1f - t);
+            lr.SetPosition(i, p);
+        }
+        lr.widthCurve = new AnimationCurve(new Keyframe(0f, width), new Keyframe(0.5f, width * 0.92f), new Keyframe(1f, width));
+        lr.sharedMaterial = mat;
+        lr.textureMode = LineTextureMode.Tile;
+        lr.numCornerVertices = 2;
+        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        return lr;
+    }
+
     public static GameObject ZipLine(Transform parent, Vector3 startFeet, Vector3 endFeet)
     {
         var root = Root("Zip Line", parent, startFeet);
@@ -388,7 +440,11 @@ public static class RooftopProps
         Part(PrimitiveType.Cube, root.transform, end + new Vector3(-0.8f, topY, 0), new Vector3(1.6f, 0.12f, 0.12f), post, false);
 
         float len = end.magnitude;
-        Part(PrimitiveType.Cube, root.transform, new Vector3(0, topY, len * 0.5f), new Vector3(0.09f, 0.09f, len), glow, false);
+        // Braided rope across the gap (a sagging line, not a rigid bar), with a faint cyan guide line.
+        Rope(root.transform, new Vector3(0, topY, 0), new Vector3(0, topY, len), 0.35f, 0.085f,
+             Mat(new Color(0.46f, 0.34f, 0.2f)));
+        Rope(root.transform, new Vector3(0, topY + 0.03f, 0), new Vector3(0, topY + 0.03f, len), 0.35f, 0.02f,
+             Glow(new Color(0.35f, 0.9f, 1f, 0.55f)));
         Part(PrimitiveType.Cube, root.transform, new Vector3(0, topY - 0.9f, 0.4f), new Vector3(0.9f, 0.1f, 0.1f), Glow(new Color(1f, 0.85f, 0.15f, 1f)), false);
         // Cyan caps on both posts so the zip lane reads from a distance.
         Part(PrimitiveType.Sphere, root.transform, new Vector3(-1.6f, topY + 0.15f, 0), Vector3.one * 0.35f, glow, false);

@@ -122,3 +122,91 @@ public static class GrenadeDebugMenu
         GuardGrenade.Throw(new Vector3(8.4f, feet + 1.4f, landZ + 8f), new Vector3(p.x, feet, landZ), 0.9f, 1.1f);
     }
 }
+
+public static class JukeboxDebugMenu
+{
+    [MenuItem("Tools/Debug/Reset Jukebox And Refund")]
+    static void ResetJukebox()
+    {
+        int refund = 0;
+        for (int i = 1; i < ShopData.Music.Length; i++)
+        {
+            if (!ShopData.OwnsMusic(i)) continue;
+            refund += ShopData.Music[i].cost;
+            PlayerPrefs.DeleteKey("Shop_MusicOwned_" + i);
+        }
+        PlayerPrefs.DeleteKey("Shop_Music");
+        ShopData.AddNotes(refund);
+        Debug.Log($"[Jukebox] Reset - refunded {refund} points, wallet now {ShopData.Notes}");
+    }
+
+    [MenuItem("Tools/Debug/Give 200 Points")]
+    static void Give() => ShopData.AddNotes(200);
+
+    [MenuItem("Tools/Debug/Log Music State")]
+    static void LogState()
+    {
+        var am = AudioManager.Instance;
+        var src = am != null ? am.GetComponent<AudioSource>() : null;
+        Debug.Log($"[Jukebox] selected={ShopData.SelectedMusicId} points={ShopData.SpendableNotes} playing={(src != null && src.isPlaying)} clip={(src != null && src.clip != null ? src.clip.name : "none")} rooftop={(am != null && am.rooftopMusic != null ? am.rooftopMusic.name : "none")}");
+    }
+}
+
+public static class DJStationDebugMenu
+{
+    [MenuItem("Tools/Debug/Spawn DJ Stations Ahead And Pause")]
+    static void Spawn()
+    {
+        if (!Application.isPlaying) return;
+        var pm = Object.FindAnyObjectByType<PlayerMovement>();
+        if (pm == null) return;
+        var cc = pm.GetComponent<CharacterController>();
+        var p = pm.transform.position;
+        float feet = p.y - (cc.height * 0.5f - cc.center.y);
+        DJStation.Build(null, new Vector3(7f, feet, p.z + 14f), 1, 7);
+        DJStation.Build(null, new Vector3(-7f, feet, p.z + 24f), -1, 11);
+        EditorApplication.isPaused = true;
+    }
+
+    static bool Ahead(out Vector3 floor)
+    {
+        floor = Vector3.zero;
+        if (!Application.isPlaying) return false;
+        var pm = Object.FindAnyObjectByType<PlayerMovement>();
+        if (pm == null) return false;
+        var cc = pm.GetComponent<CharacterController>();
+        var p = pm.transform.position;
+        floor = new Vector3(0f, p.y - (cc.height * 0.5f - cc.center.y), p.z);
+        return true;
+    }
+
+    [MenuItem("Tools/Debug/Spawn Centre DJ Stage Ahead")]
+    static void Centre()
+    {
+        if (!Ahead(out var f)) return;
+        // Guard on the right; the runner is moved into that lane to test the taser.
+        DJStation.BuildCenter(null, f + Vector3.forward * 26f, 1, 3);
+        var pm = Object.FindAnyObjectByType<PlayerMovement>();
+        var cc = pm.GetComponent<CharacterController>();
+        cc.enabled = false;
+        pm.transform.position = new Vector3(4f, pm.transform.position.y, pm.transform.position.z);
+        cc.enabled = true;
+    }
+
+    [MenuItem("Tools/Debug/Release Smoke Ahead And Pause")]
+    static void Smoke()
+    {
+        if (!Ahead(out var f)) return;
+        SmokeCloud.Spawn(f + Vector3.forward * 10f, new Vector3(7f, 2.4f, 7f), 2.6f, Color.white, new Vector3(-1f, 0f, -0.6f));
+        EditorApplication.delayCall += () => EditorApplication.delayCall += () => { if (Application.isPlaying) EditorApplication.isPaused = true; };
+    }
+
+    [MenuItem("Tools/Debug/Drop Disco Ball Ahead")]
+    static void Disco()
+    {
+        if (!Ahead(out var f)) return;
+        var pm = Object.FindAnyObjectByType<PlayerMovement>();
+        ClubProps.DiscoBallDrop(null, new Vector3(pm.transform.position.x, f.y, f.z + 30f));
+    }
+}
+
