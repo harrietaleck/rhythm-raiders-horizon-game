@@ -18,6 +18,8 @@ public static class SetupGuideScene
     [MenuItem("Tools/Setup Guide Scene")]
     public static void Run()
     {
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        string previous = EditorSceneManager.GetActiveScene().path;
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
         var camGo = new GameObject("Main Camera");
@@ -59,36 +61,127 @@ public static class SetupGuideScene
         ui.guideButton = guideBtn;
         ui.guideMenuButton = guideMenuBtn;
         ui.creditsMenuButton = creditsMenuBtn;
+        ui.pages = _pages;
+        ui.tabButtons = _tabs;
         credits.SetActive(false);
 
         EditorSceneManager.SaveScene(scene, ScenePath);
         AddToBuildSettings();
         Debug.Log("[SetupGuideScene] GuideScene created.");
+        if (!string.IsNullOrEmpty(previous) && previous != ScenePath) EditorSceneManager.OpenScene(previous);
     }
 
+    static GameObject[] _pages;
+    static Button[] _tabs;
+
+    static string C(string t) => "<color=" + Hex + ">" + t + "</color>";
+    static string W(string t) => "<color=#FF6B5A>" + t + "</color>";
+    static string G(string t) => "<color=#FFD65A>" + t + "</color>";
+
+    /// <summary>
+    /// Paged How To Play: BASICS / SCREEN / LEVELS / POINTS &amp; SHOP tabs (also ← → keys).
+    /// </summary>
     static GameObject BuildGuide(GameObject canvas, out Button creditsBtn, out Button menuBtn)
     {
-        var window = Window(canvas, "GuidePanel", new Vector2(0.17f, 0.07f), new Vector2(0.83f, 0.93f), "HOW TO PLAY");
+        var window = Window(canvas, "GuidePanel", new Vector2(0.08f, 0.04f), new Vector2(0.92f, 0.96f), "HOW TO PLAY");
 
-        Section(window, "Goal", "GOAL",
-            "Collect <color=" + Hex + ">2 Beat Fragments</color> in each level while the security guard chases you.\n" +
-            "Each obstacle you hit costs shield. Get caught or run out and it's game over.", 0.66f, 0.81f);
+        string[] tabNames = { "BASICS", "SCREEN", "LEVELS", "POINTS & SHOP" };
+        _tabs = new Button[tabNames.Length];
+        _pages = new GameObject[tabNames.Length];
+        for (int i = 0; i < tabNames.Length; i++)
+        {
+            float x0 = 0.06f + i * 0.225f;
+            _tabs[i] = MakeButton(window, "Tab" + i, tabNames[i], new Vector2(x0, 0.735f), new Vector2(x0 + 0.205f, 0.815f));
+            _pages[i] = Panel(window, "Page" + i, new Vector2(0.06f, 0.17f), new Vector2(0.94f, 0.72f));
+        }
 
-        Section(window, "Controls", "CONTROLS",
-            "<color=" + Hex + ">A / D</color> or <color=" + Hex + ">ARROWS</color>   Move left / right      " +
-            "<color=" + Hex + ">SPACE</color>   Jump      <color=" + Hex + ">ESC</color>   Pause", 0.53f, 0.65f);
+        // ── BASICS ──
+        var p = _pages[0];
+        Block(p, "Goal", "GOAL",
+            "Grab the " + C("2 Beat Fragments") + " in each level and reach the end while the security guard chases you. " +
+            "Win all three levels to enter the " + G("Hall of Fame") + ".", 0f, 0.5f, 0.66f, 1f);
+        Block(p, "Controls", "CONTROLS",
+            C("A / D") + " or " + C("ARROWS") + "  move between lanes\n" + C("SPACE") + "  jump\n" + C("ESC") + "  pause / settings", 0.52f, 1f, 0.66f, 1f);
+        Block(p, "Hits", "BUMPING INTO THINGS",
+            "You " + W("trip, fall, get up and dash") + " on. Each bump costs " + C("1 shield") + " and some vibe, and the " +
+            "guard gains ground. Trip while he's right behind you and you're " + W("caught") + ".", 0f, 0.5f, 0.3f, 0.64f);
+        Block(p, "Lose", "SHIELD, VIBE & GAME OVER",
+            C("Shield") + " soaks up hits first. When it's gone, " + C("Vibe") + " drops. " +
+            W("Game over") + " when Vibe hits 0, the guard catches you, or you fall off a roof. The Game Over screen names what got you.", 0.52f, 1f, 0.3f, 0.64f);
+        Block(p, "Tips", "TIPS",
+            "Jump " + C("on the beat") + " for a speed boost.  Watch the " + C("GUARD") + " distance - when it says " + W("CLOSE!") + " don't take risks.  " +
+            "Notes lead you to the safe lane.", 0f, 1f, 0f, 0.28f);
 
-        var levels = Label(window, "LevelsHeader", "LEVELS", new Vector2(0.10f, 0.45f), new Vector2(0.90f, 0.51f), 28, SciFiUiKit.Cyan);
-        levels.characterSpacing = 8;
-        levels.alignment = TextAlignmentOptions.MidlineLeft;
+        // ── SCREEN ──
+        p = _pages[1];
+        Block(p, "TopLeft", "TOP LEFT",
+            C("VIBE") + "  your health\n" + C("SHIELD") + "  hits you can still take (flashes red when low)\n" +
+            C("ARTIFACTS") + "  Beat Fragments found (0/2)\n" + C("GUARD") + "  how far behind he is: NEAR, " + W("CLOSE!") + ", " + W("SURGE") + " when he sprints", 0f, 0.5f, 0.5f, 1f);
+        Block(p, "TopMid", "TOP CENTRE",
+            "Distance run, how far to the next fragment, notes, score and your combo. Each level adds its own line " +
+            "(museum glass cases, club groove).", 0.52f, 1f, 0.5f, 1f);
+        Block(p, "Right", "RIGHT SIDE",
+            "Area names and warnings slide in and out (" + W("SLIPPERY!") + ", " + W("SMOKE MACHINE!") + ", " + W("GRENADIER!") + "...). Power-up timers show here too.", 0f, 0.5f, 0.06f, 0.48f);
+        Block(p, "Bottom", "BOTTOM",
+            "Today's " + C("daily challenge") + " and a level tip. The " + C("diamond") + " pulses on the beat.  " +
+            "Bottom right: your " + G("SOUND POINTS") + " (+ notes collected this run).", 0.52f, 1f, 0.06f, 0.48f);
 
-        LevelColumn(window, 1, "Sprint across the sunset rooftops. Jump the gaps between buildings and don't fall off the edge.", 0.10f, 0.36f);
-        LevelColumn(window, 2, "A faster run through the museum halls. Jump the rolling drums and dodge the alarm traps.", 0.37f, 0.63f);
-        LevelColumn(window, 3, "The fastest run. Lasers and sound-wave traps everywhere. Stay on the beat.", 0.64f, 0.90f);
+        // ── LEVELS ──
+        p = _pages[2];
+        LevelBlock(p, 1, 0f, 0.32f,
+            "Jump the " + W("roof gaps") + " (red edges and steel bars mark them) or ride a " + C("zip-line") + ". " +
+            "Dodge AC units, water tanks and laundry lines. " + C("DJ stations") + " blast " + W("smoke") + " across the lanes. " +
+            "Centre DJ stages have a " + W("taser bodyguard") + " on one side - jump him or take the other lane.");
+        LevelBlock(p, 2, 0.34f, 0.66f,
+            W("Armed guards") + " aim a red laser - strafe out of it. " + W("Grenadiers") + " throw grenades: when a red ring lands in your lane, switch lanes. " +
+            "Jump " + W("low lasers") + " and " + W("planted grenades") + ", dodge laser grids. Smash glass cases: " +
+            C("cyan") + " = boost, " + W("red") + " = sour note, purple = gamble.");
+        LevelBlock(p, 3, 0.68f, 1f,
+            "Jump " + W("laser fences") + ", dodge speaker stacks, cross " + W("bass walls") + " when they go dark. " +
+            "Watch for sweeping lasers, falling light rigs and " + W("disco balls") + " that drop and roll down a lane. " +
+            "DJ stages, bouncers and smoke on the dance floor.");
 
-        creditsBtn = MakeButton(window, "CreditsButton", "CREDITS", new Vector2(0.12f, 0.05f), new Vector2(0.46f, 0.16f));
-        menuBtn    = MakeButton(window, "MainMenuButton", "MAIN MENU", new Vector2(0.54f, 0.05f), new Vector2(0.88f, 0.16f));
+        // ── POINTS & SHOP ──
+        p = _pages[3];
+        Block(p, "Notes", "NOTES & SOUND POINTS",
+            "Collect music " + C("notes") + " for score. When you finish a level they're banked as " + G("SOUND POINTS") + " for the Shop.", 0f, 0.5f, 0.55f, 1f);
+        Block(p, "Stars", "STARS",
+            "1 star for finishing, +1 if you still have shield left, +1 for collecting enough notes. Beat your best to see " + G("NEW BEST") + ".", 0.52f, 1f, 0.55f, 1f);
+        Block(p, "Shop", "SHOP",
+            "Upgrades: " + C("Magnet") + ", " + C("Bubble") + ", " + C("Smoke Bomb") + ", " + C("Head Start") + ". Trails for your runner. " +
+            "Open the " + G("JUKEBOX") + " to buy tracks and pick the music you run to - your pick plays in every level.", 0f, 0.5f, 0.06f, 0.52f);
+        Block(p, "Records", "RECORDS",
+            "Enter your name on your first win (change it on the results screen). Each level saves your score, stars and time; " +
+            "clear all three for the " + G("Hall of Fame") + ". Finish the " + C("daily challenge") + " for bonus notes.", 0.52f, 1f, 0.06f, 0.52f);
+
+        creditsBtn = MakeButton(window, "CreditsButton", "CREDITS", new Vector2(0.12f, 0.04f), new Vector2(0.46f, 0.13f));
+        menuBtn    = MakeButton(window, "MainMenuButton", "MAIN MENU", new Vector2(0.54f, 0.04f), new Vector2(0.88f, 0.13f));
         return window;
+    }
+
+    /// <summary>Header + body block inside a page, laid out in page-relative anchors.</summary>
+    static void Block(GameObject page, string name, string header, string body, float xMin, float xMax, float yMin, float yMax)
+    {
+        float pad = 0.015f;
+        float headH = Mathf.Min(0.12f, (yMax - yMin) * 0.3f);
+        var h = Label(page, name + "Header", header, new Vector2(xMin + pad, yMax - headH), new Vector2(xMax - pad, yMax), 26, SciFiUiKit.Cyan);
+        h.characterSpacing = 6;
+        h.alignment = TextAlignmentOptions.MidlineLeft;
+        var b = Label(page, name + "Body", body, new Vector2(xMin + pad, yMin), new Vector2(xMax - pad, yMax - headH), 22, SciFiUiKit.TextMain);
+        b.alignment = TextAlignmentOptions.TopLeft;
+        b.textWrappingMode = TextWrappingModes.Normal;
+        b.enableAutoSizing = true;
+        b.fontSizeMin = 14f;
+        b.fontSizeMax = 22f;
+        b.richText = true;
+    }
+
+    static void LevelBlock(GameObject page, int level, float xMin, float xMax, string howTo)
+    {
+        var def = LevelCatalog.Get(level);
+        string difficulty = level == 1 ? "EASY" : level == 2 ? "MEDIUM" : "HARD";
+        Block(page, "Level" + level, "LEVEL " + level + "  <size=75%><color=#9FB8D1>" + def.displayName.ToUpper() + "  -  " + difficulty + "</color></size>",
+              howTo + "\n" + C(def.hitCount + " shield") + " hits before Vibe starts dropping.", xMin, xMax, 0f, 1f);
     }
 
     static GameObject BuildCredits(GameObject canvas, out Button guideBtn, out Button menuBtn)
