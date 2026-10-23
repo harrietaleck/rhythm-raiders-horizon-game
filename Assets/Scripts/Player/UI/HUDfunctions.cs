@@ -91,6 +91,40 @@ public class HUDfunctions : MonoBehaviour
         ApplyStyle(boostText,     new Color(1f,   0.9f, 0.3f, 1f));    // yellow  — power-up
         ApplyStyle(scoreText,     new Color(0.9f, 0.9f, 0.9f, 1f));    // white   — score
         ApplyStyle(levelText,     new Color(0.7f, 0.7f, 1f,   1f));    // soft blue — level
+
+        CompactLayout();
+    }
+
+    [Header("Layout")]
+    [Tooltip("Size of the stats panel (top-left). Smaller keeps the track in view.")]
+    [Range(0.4f, 1f)] public float panelScale = 0.68f;
+
+    /// <summary>
+    /// Keeps the gameplay HUD out of the way: the stats panel shrinks into the top-left corner
+    /// and goes slightly see-through, and the top-right panel is hidden — its level number and
+    /// "$" total were redundant (each level's own banner shows score, notes and distance).
+    /// </summary>
+    void CompactLayout()
+    {
+        var right = GameObject.Find("HUD_RightPanel");
+        if (right != null) right.SetActive(false);
+        if (scoreText != null && (right == null || !scoreText.transform.IsChildOf(right.transform))) scoreText.gameObject.SetActive(false);
+        if (levelText != null && (right == null || !levelText.transform.IsChildOf(right.transform))) levelText.gameObject.SetActive(false);
+
+        var left = GameObject.Find("HUD_LeftPanel");
+        if (left == null) return;
+        var rt = left.GetComponent<RectTransform>();
+        if (rt != null)
+        {
+            // Pivot on the top-left corner so shrinking keeps it tucked in the corner.
+            var size = rt.rect.size;
+            var shift = new Vector2(0f - rt.pivot.x, 1f - rt.pivot.y);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.anchoredPosition += new Vector2(shift.x * size.x, shift.y * size.y);
+            rt.localScale = Vector3.one * panelScale;
+        }
+        var bg = left.GetComponent<UnityEngine.UI.Image>();
+        if (bg != null) { var c = bg.color; c.a = Mathf.Min(c.a, 0.8f); bg.color = c; }
     }
 
     // ── Update ────────────────────────────────────────────────────────────────
@@ -103,18 +137,18 @@ public class HUDfunctions : MonoBehaviour
 
         // ── Vibe ──────────────────────────────────────────────────────────────
         TmpUiUtility.SetSafeText(healthText,
-            $"{_pickup.currentHealth}/{_pickup.maxHealth}");
+            $"VIBE {_pickup.currentHealth}");
 
         // ── Artifacts ─────────────────────────────────────────────────────────
         TmpUiUtility.SetSafeText(artifactText,
-            $"Artifacts  {_pickup.artifactAmount}/{PickupBase.ArtifactsToWin}");
+            $"ARTIFACTS {_pickup.artifactAmount}/{PickupBase.ArtifactsToWin}");
 
         // ── Shield (hitCounter) ───────────────────────────────────────────────
         int shield          = _pickup.hitCounter;
         int dangerThreshold = Mathf.Max(1, Mathf.CeilToInt(_maxShield * 0.3f));
         if (hitText != null)
         {
-            TmpUiUtility.SetSafeText(hitText, shield.ToString());
+            TmpUiUtility.SetSafeText(hitText, $"SHIELD {shield}");
             hitText.color = shield <= dangerThreshold
                 ? Color.Lerp(Color.red, new Color(0.4f, 0.75f, 1f, 1f),
                              Mathf.PingPong(Time.time * 3f, 1f))
@@ -139,7 +173,7 @@ public class HUDfunctions : MonoBehaviour
                                     : dist < 5f   ? Color.red
                                     : dist < 10f  ? new Color(1f, 0.6f, 0f)
                                     : new Color(1f, 0.4f, 0.4f);
-                TmpUiUtility.SetSafeText(guardDistText, $"{dist:F0}m{danger}");
+                TmpUiUtility.SetSafeText(guardDistText, $"GUARD {dist:F0}m{danger}");
             }
             else
             {

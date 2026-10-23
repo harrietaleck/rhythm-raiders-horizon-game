@@ -90,7 +90,7 @@ public static class PlayerRecords
     public static bool HasPlayerName => !string.IsNullOrWhiteSpace(Data.playerName);
     public static string PlayerName => HasPlayerName ? Data.playerName : DefaultName;
 
-    /// <summary>Sets the name; records saved before a name existed are credited to it.</summary>
+    /// <summary>Sets (or changes) the name; this player's earlier records move to the new name.</summary>
     public static void SetPlayerName(string name)
     {
         name = (name ?? "").Trim();
@@ -99,11 +99,8 @@ public static class PlayerRecords
         string old = PlayerName;
         bool hadName = HasPlayerName;
         Data.playerName = name.ToUpperInvariant();
-        if (!hadName)
-        {
-            foreach (var r in AllLevelRecords()) if (r.playerName == old || string.IsNullOrEmpty(r.playerName)) r.playerName = Data.playerName;
-            foreach (var c in Data.hallOfFame) if (c.playerName == old || string.IsNullOrEmpty(c.playerName)) c.playerName = Data.playerName;
-        }
+        foreach (var r in AllLevelRecords()) if (r.playerName == old || string.IsNullOrEmpty(r.playerName)) r.playerName = Data.playerName;
+        foreach (var c in Data.hallOfFame) if (c.playerName == old || string.IsNullOrEmpty(c.playerName)) c.playerName = Data.playerName;
         Save();
     }
 

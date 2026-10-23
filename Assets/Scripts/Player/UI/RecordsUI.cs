@@ -33,6 +33,9 @@ public static class RecordsUI
         inputGo.GetComponent<Image>().color = new Color(0.03f, 0.06f, 0.12f, 0.95f);
         var input = inputGo.GetComponent<TMP_InputField>();
         input.characterLimit = 14;
+        // The HUD font only has capitals, so type in capitals (lowercase letters were invisible).
+        input.onValidateInput = (text, index, c) =>
+            char.IsLetterOrDigit(c) || c == ' ' || c == '-' || c == '_' ? char.ToUpperInvariant(c) : '\0';
         input.text = PlayerRecords.HasPlayerName ? PlayerRecords.PlayerName : "";
         var skin = HudSkin.Get();
         foreach (var t in inputGo.GetComponentsInChildren<TextMeshProUGUI>(true))
@@ -63,20 +66,27 @@ public static class RecordsUI
     /// Results panel beside the Victory menu (the scene has no score text of its own).
     /// Returns the body text so the caller can refresh it (e.g. after the name is entered).
     /// </summary>
-    public static TextMeshProUGUI ShowResultsPanel(string title)
+    public static TextMeshProUGUI ShowResultsPanel(string title, Action onChangeName = null)
     {
         var go = new GameObject("LevelResults", typeof(RectTransform));
         var canvas = go.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 50;
+        canvas.sortingOrder = 250;   // above the narration overlay so CHANGE NAME is clickable
         var scaler = go.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight = 0.5f;
         var panel = Panel(go.transform, new Vector2(0.685f, 0.1f), new Vector2(0.975f, 0.9f));
         Label(panel, "Title", title, new Vector2(0.06f, 0.88f), new Vector2(0.94f, 0.97f), 34, Cyan);
-        var body = Label(panel, "Body", "", new Vector2(0.08f, 0.05f), new Vector2(0.92f, 0.86f), 24, Color.white);
+        var body = Label(panel, "Body", "", new Vector2(0.08f, onChangeName != null ? 0.13f : 0.05f), new Vector2(0.92f, 0.86f), 24, Color.white);
         body.alignment = TextAlignmentOptions.Top;
+        if (onChangeName != null)
+        {
+            go.AddComponent<GraphicRaycaster>();
+            var change = Button(panel, "CHANGE NAME", new Vector2(0.25f, 0.03f), new Vector2(0.75f, 0.11f));
+            change.onClick.AddListener(() => onChangeName());
+            change.gameObject.AddComponent<ButtonSoundPlayer>();
+        }
         return body;
     }
 

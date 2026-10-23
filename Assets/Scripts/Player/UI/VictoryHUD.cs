@@ -119,10 +119,11 @@ public class VictoryHUD : MonoBehaviour
             if (go != null) scoreText = go.GetComponent<TextMeshProUGUI>();
         }
         if (scoreText == null)
-            scoreText = RecordsUI.ShowResultsPanel("LEVEL RESULTS");
+            scoreText = RecordsUI.ShowResultsPanel("LEVEL RESULTS", OnChangeName);
 
         var def       = LevelCatalog.Get(_completedLevel);
-        string header = $"<b>Level {_completedLevel}  —  {def.displayName}</b>";
+        string runner = PlayerRecords.HasPlayerName ? $"<color=#5AD9FF>RUNNER  {PlayerRecords.PlayerName}</color>\n" : "";
+        string header = $"{runner}<b>Level {_completedLevel}  —  {def.displayName}</b>";
         string body   = RunStats.FormatScoreSummary() + "\n" + RecordLine();
 
         if (scoreText != null)
@@ -134,6 +135,18 @@ public class VictoryHUD : MonoBehaviour
             // Fallback: append score under the YOU WIN title using rich-text size tag
             titleText.text = $"YOU WIN!\n\n<size=55%>{header}\n{body}</size>";
         }
+    }
+
+    private void OnChangeName()
+    {
+        if (_namePromptOpen) return;
+        _namePromptOpen = true;
+        RecordsUI.ShowNamePrompt(() =>
+        {
+            _namePromptOpen = false;
+            ShowScoreboard();
+            if (_hallPending) { _hallPending = false; RecordsUI.ShowHallOfFame(null); }
+        });
     }
 
     /// <summary>Saved-record summary for this level: new best or the best to beat.</summary>
