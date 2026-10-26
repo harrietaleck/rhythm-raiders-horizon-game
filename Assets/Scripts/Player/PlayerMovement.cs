@@ -115,6 +115,7 @@ public class PlayerMovement : MonoBehaviour
 
         velocity += gravity * Time.deltaTime;
         move.y = velocity;
+        ImpactProbe(move);
         controller.Move(move * Time.deltaTime);
 
         RecoverFromFall();
@@ -123,7 +124,49 @@ public class PlayerMovement : MonoBehaviour
     void OnControllerColliderHit(ControllerColliderHit hit)
     {
         if (!enabled || !GameManager.GameStarted || hit.collider == null) return;
+        if (ReactToCharacter(hit.collider)) return;
         _pickup?.HandleSolidContact(hit.collider);
+    }
+
+    readonly RaycastHit[] _probeHits = new RaycastHit[12];
+
+    /// <summary>
+    /// Hits register the moment the runner's body meets an obstacle: a short sweep of the body
+    /// capsule just ahead of this frame's movement fires the impact (effect, sound, stumble)
+    /// on contact, instead of a frame or two after the capsule has pushed into it.
+    /// </summary>
+    void ImpactProbe(Vector3 move)
+    {
+        if (controller == null || _pickup == null) return;
+        var dir = new Vector3(move.x, 0f, move.z);
+        float speed = dir.magnitude;
+        if (speed < 0.1f) return;
+        dir /= speed;
+        float lead = Mathf.Clamp(speed * 0.04f, 0.15f, 0.6f) + speed * Time.deltaTime;
+        var centre = transform.TransformPoint(controller.center);
+        float half = Mathf.Max(0f, controller.height * 0.5f - controller.radius);
+        var p1 = centre + Vector3.up * half;
+        var p2 = centre - Vector3.up * (half - 0.15f);   // just above the feet so the floor isn't swept
+        int n = Physics.CapsuleCastNonAlloc(p1, p2, controller.radius, dir, _probeHits, lead, ~0, QueryTriggerInteraction.Collide);
+        for (int i = 0; i < n; i++)
+        {
+            var col = _probeHits[i].collider;
+            if (col == null || col.transform.IsChildOf(transform)) continue;
+            if (ReactToCharacter(col)) continue;
+            if (col.GetComponentInParent<HealthDecreaseObstacle>() == null) continue;
+            if (col.isTrigger) _pickup.HandleTrigger(col);
+            else _pickup.HandleSolidContact(col);
+        }
+    }
+
+    /// <summary>DJ bodyguards grab the runner; dancers get bumped (and knock notes out of her bag).</summary>
+    bool ReactToCharacter(Collider col)
+    {
+        var guard = col.GetComponentInParent<BodyguardCatch>();
+        if (guard != null) { guard.Catch(transform); return true; }
+        var dancer = col.GetComponentInParent<DancerBump>();
+        if (dancer != null) { dancer.Bump(transform); return true; }
+        return false;
     }
 
     // ── Stumble ─────────────────────────────────────────────────────────────

@@ -49,6 +49,7 @@ public class RunNote : MonoBehaviour
         if (RunDirector.Instance != null) RunDirector.Instance.AddNote();
         else if (MuseumRun.Instance != null) MuseumRun.Instance.AddNote();
         else ClubRun.Instance?.AddNote();
+        NoteFx.FlyToBag(visual);   // the fragment flies into the runner's backpack
         Destroy(gameObject);
     }
 }

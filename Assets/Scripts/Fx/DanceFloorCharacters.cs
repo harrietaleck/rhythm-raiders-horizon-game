@@ -13,6 +13,9 @@ public static class DanceFloorCharacters
         var prefab = lib.dancers[Random.Range(0, lib.dancers.Length)];
         var t = Spawn(parent, prefab, feet, facing, height, lib.crowdController, "Dancer");
         if (t == null) return null;
+        // Solid body: the runner can bump into dancers (and loses notes from her bag).
+        AddBody(t, RunnerHeight() * (height / 1.75f));
+        t.gameObject.AddComponent<DancerBump>();
         var anim = t.GetComponentInChildren<Animator>();
         if (anim != null && lib.danceStates != null && lib.danceStates.Length > 0)
         {
@@ -27,8 +30,8 @@ public static class DanceFloorCharacters
     {
         var lib = FxLibrary.Get();
         if (lib == null || lib.dj == null) return null;
-        // The DJ works behind a fixed-size booth, so he keeps a real-world height rather than the runner's.
-        var t = Spawn(parent, lib.dj, feet, facing, 1.95f, lib.djController, "DJ Character", absoluteHeight: true);
+        // The DJ is about the runner's height, like everyone else in the club.
+        var t = Spawn(parent, lib.dj, feet, facing, 1.75f * DJScale, lib.djController, "DJ Character", alwaysAnimate: true);
         var anim = t != null ? t.GetComponentInChildren<Animator>() : null;
         if (anim != null) { anim.Play(0, 0, Random.value); anim.Update(0f); }
         return t;
@@ -38,7 +41,33 @@ public static class DanceFloorCharacters
     {
         var lib = FxLibrary.Get();
         if (lib == null || lib.bodyguard == null) return null;
-        return Spawn(parent, lib.bodyguard, feet, facing, 1.85f, lib.bodyguardController, "Bodyguard Character", alwaysAnimate: true);
+        // A bodyguard is a little taller than the runner.
+        var t = Spawn(parent, lib.bodyguard, feet, facing, 1.75f * BodyguardScale, lib.bodyguardController, "Bodyguard Character", alwaysAnimate: true);
+        if (t == null) return null;
+        var anim = t.GetComponentInChildren<Animator>();
+        if (anim != null) { anim.Play(0, 0, Random.value); anim.Update(0f); }
+        // Run into him and he grabs the runner: game over.
+        AddBody(t, RunnerHeight() * BodyguardScale);
+        t.gameObject.AddComponent<BodyguardCatch>();
+        GameplayCollisionUtility.EnsureKinematicRigidbody(t.gameObject);
+        return t;
+    }
+
+    /// <summary>Puts a pistol like the museum guards' in the character's right hand, pointing ahead.</summary>
+    public static void AttachSidearm(Transform character)
+    {
+        var anim = character != null ? character.GetComponentInChildren<Animator>() : null;
+        var hand = anim != null && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightHand) : null;
+        if (hand == null) return;
+        float s = RunnerHeight() / 1.75f;
+        var gun = new GameObject("Sidearm").transform;
+        gun.position = hand.position + character.forward * 0.08f * s;
+        gun.rotation = Quaternion.LookRotation(character.forward, Vector3.up);
+        gun.localScale = Vector3.one * s;
+        var metal = RooftopProps.Mat(new Color(0.08f, 0.08f, 0.09f));
+        RooftopProps.Part(PrimitiveType.Cube, gun, new Vector3(0f, 0f, 0.1f), new Vector3(0.06f, 0.08f, 0.26f), metal, false);
+        RooftopProps.Part(PrimitiveType.Cube, gun, new Vector3(0f, -0.07f, 0f), new Vector3(0.05f, 0.12f, 0.06f), metal, false, new Vector3(-15f, 0f, 0f));
+        gun.SetParent(hand, true);
     }
 
     static Transform Spawn(Transform parent, GameObject prefab, Vector3 feet, Vector3 facing, float height,
@@ -68,14 +97,10 @@ public static class DanceFloorCharacters
         // Size against the runner: the characters share the floor with the player, so they are
         // scaled to the runner's height (height is given for a 1.75 m reference person).
         float target = absoluteHeight ? height : RunnerHeight() * (height / 1.75f);
-        var head = anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.Head) : null;
-        var lFoot = anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.LeftFoot) : null;
-        var rFoot = anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightFoot) : null;
-        if (head != null && lFoot != null && rFoot != null)
+        float h = MeasureHeight(model.transform);
+        if (h > 0.01f)
         {
-            // Head bone sits at the base of the skull: ~92% of standing height above the soles.
-            float h = (head.position.y - Mathf.Min(lFoot.position.y, rFoot.position.y)) / 0.88f;
-            if (h > 0.01f) model.transform.localScale *= target / h;
+            model.transform.localScale *= target / h;
         }
         else
         {
@@ -106,6 +131,18 @@ public static class DanceFloorCharacters
         foreach (var a in model.GetComponentsInChildren<AudioListener>(true)) { a.enabled = false; Object.Destroy(a); }
     }
 
+    /// <summary>Heights relative to the runner.</summary>
+    public static float BodyguardScale = 1.06f;
+    public static float DJScale = 1.0f;
+
+    static void AddBody(Transform root, float h)
+    {
+        var cap = root.gameObject.AddComponent<CapsuleCollider>();
+        cap.height = h;
+        cap.radius = h * 0.13f;
+        cap.center = new Vector3(0f, h * 0.5f, 0f);
+    }
+
     static float _runnerHeight;
     static int _runnerScene = -1;
 
@@ -118,12 +155,31 @@ public static class DanceFloorCharacters
         _runnerHeight = 1.75f;
         var p = GameObject.FindGameObjectWithTag("Player");
         if (p == null) return _runnerHeight;
-        Transform head = null;
-        foreach (var t in p.GetComponentsInChildren<Transform>(true))
-            if (t.name.EndsWith("Head")) { head = t; break; }
-        var cc = p.GetComponent<CharacterController>();
-        float floor = cc != null ? cc.bounds.min.y : p.transform.position.y;
-        if (head != null && head.position.y - floor > 0.3f) _runnerHeight = (head.position.y - floor) / 0.88f;
+        // Same measure as the other characters: top of the head over the feet.
+        float m = MeasureHeight(p.transform);
+        if (m > 0.3f) _runnerHeight = m;
         return _runnerHeight;
+    }
+
+    /// <summary>
+    /// Standing height from the rig: the Mixamo top-of-head bone over the lowest foot bone (the
+    /// ankle sits ~5% above the sole). Works the same for cartoon and realistic proportions.
+    /// Returns 0 if the bones aren't found.
+    /// </summary>
+    public static float MeasureHeight(Transform root)
+    {
+        Transform top = null, head = null;
+        float foot = float.MaxValue;
+        foreach (var t in root.GetComponentsInChildren<Transform>(true))
+        {
+            string n = t.name;
+            if (n.EndsWith("HeadTop_End")) top = t;
+            else if (head == null && n.EndsWith("Head")) head = t;
+            else if (n.EndsWith("LeftFoot") || n.EndsWith("RightFoot")) foot = Mathf.Min(foot, t.position.y);
+        }
+        if (foot == float.MaxValue) return 0f;
+        if (top != null) return (top.position.y - foot) / 0.95f;
+        if (head != null) return (head.position.y - foot) / 0.83f;
+        return 0f;
     }
 }

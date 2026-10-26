@@ -75,18 +75,35 @@ public static class DanceFloorDebugMenu
         var list = new System.Collections.Generic.List<Transform>();
         foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsSortMode.None))
             if (((t.name == "Dancer" && !_crewOnly) || t.name == "DJ Character" || t.name == "Bodyguard Character" || t.name == "Bouncer" || t.name == "Bodyguard"
-                 || (!_crewOnly && (t.name.StartsWith("Statue") || t.name.StartsWith("Painting")))) && t.position.z > p.transform.position.z)
+                 || (!_crewOnly && (t.name.StartsWith("Statue (") || t.name == "Painting"))) && t.position.z > p.transform.position.z)
                 list.Add(t);
         if (list.Count == 0) { Debug.Log("[DanceFloor] nothing ahead"); return; }
-        if (_statueOnly) list.RemoveAll(t => !t.name.StartsWith("Statue"));
+        if (_statueOnly) list.RemoveAll(t => !t.name.StartsWith("Statue ("));
         if (list.Count == 0) return;
         list.Sort((a, b) => a.position.z.CompareTo(b.position.z));
         var target = list[_frameIndex++ % list.Count];
-        var look = target.position + Vector3.up * 1.0f;
+        float k = target.name.StartsWith("Painting") || target.name.StartsWith("Statue") ? 1f : DanceFloorCharacters.RunnerHeight() / 1.75f;
+        var look = target.position + Vector3.up * 1.0f * k;
         var side = target.position.x > 0 ? -1f : 1f;
-        cam.transform.position = look + new Vector3(side * 3.2f, 0.5f, -2.2f);
+        cam.transform.position = look + new Vector3(side * 3.2f, 0.5f, -2.2f) * k * 1.3f;
         cam.transform.LookAt(look);
         Debug.Log($"[DanceFloor] framed {target.name} at {target.position}");
+    }
+
+    [MenuItem("Tools/Debug/Drop Roof Gap Ahead")]
+    static void DropGap()
+    {
+        var p = GameObject.FindGameObjectWithTag("Player");
+        if (p == null) return;
+        var c = new Vector3(0f, 0f, p.transform.position.z + 16f);
+        var gap = RooftopProps.Gap(null, c, 5f, true, 4f);
+        var cam = Camera.main;
+        if (cam != null)
+        {
+            cam.transform.position = new Vector3(5f, 4.5f, c.z - 9f);
+            cam.transform.LookAt(c + Vector3.up * 0.5f);
+        }
+        Debug.Log("[Debug] roof gap at " + c);
     }
 
     [MenuItem("Tools/Debug/Drop Statue Ahead")]
@@ -139,4 +156,54 @@ public static class DanceFloorDebugMenu
             sb.AppendLine($"  {c.name} enabled={c.enabled} active={c.gameObject.activeInHierarchy} depth={c.depth} target={(c.targetTexture != null)}");
         Debug.Log(sb.ToString());
     }
+
+    [MenuItem("Tools/Debug/Line Up Runner With Bodyguard And DJ")]
+    static void LineUp()
+    {
+        var p = GameObject.FindGameObjectWithTag("Player");
+        if (p == null) return;
+        UnityEditor.EditorApplication.isPaused = true;
+        var anim = p.GetComponentInChildren<Animator>();
+        var fwd = anim != null ? anim.transform.forward : Vector3.forward;
+        var right = Vector3.Cross(Vector3.up, fwd);
+        float floor = p.GetComponent<CharacterController>() != null ? p.GetComponent<CharacterController>().bounds.min.y : 0f;
+        var basePos = new Vector3(p.transform.position.x, floor, p.transform.position.z);
+        DanceFloorCharacters.SpawnBodyguard(null, basePos + right * 1.6f, -right);
+        DanceFloorCharacters.SpawnDJ(null, basePos + right * 3.2f, -right);
+        DanceFloorCharacters.SpawnDancer(null, basePos + right * 4.8f, -right);
+        var cam = Camera.main;
+        float h = DanceFloorCharacters.RunnerHeight();
+        cam.transform.position = basePos + right * 2.4f - fwd * (h * 2.6f) + Vector3.up * (h * 0.6f);
+        cam.transform.LookAt(basePos + right * 2.4f + Vector3.up * (h * 0.5f));
+        Debug.Log($"[Debug] runner height {h:0.00}");
+    }
+
+    [MenuItem("Tools/Debug/Drop Dancer In Lane Ahead")]
+    static void DancerAhead()
+    {
+        var p = GameObject.FindGameObjectWithTag("Player");
+        if (p == null) return;
+        var cc = p.GetComponent<CharacterController>();
+        float floor = cc != null ? cc.bounds.min.y : 0f;
+        DanceFloorCharacters.SpawnDancer(null, new Vector3(p.transform.position.x, floor, p.transform.position.z + 12f), Vector3.back);
+    }
+
+    [MenuItem("Tools/Debug/Drop Bodyguard In Lane Ahead")]
+    static void GuardAhead()
+    {
+        var p = GameObject.FindGameObjectWithTag("Player");
+        if (p == null) return;
+        var cc = p.GetComponent<CharacterController>();
+        float floor = cc != null ? cc.bounds.min.y : 0f;
+        DanceFloorCharacters.SpawnBodyguard(null, new Vector3(p.transform.position.x, floor, p.transform.position.z + 12f), Vector3.back);
+    }
+
+    [MenuItem("Tools/Debug/Preview Game Over Card")]
+    static void PreviewLose() => GameOverOverlay.ShowResult("GAME OVER", "You were caught by the guard!", "Distance: 367m   |   Fragments: 1   |   $500", false);
+
+    [MenuItem("Tools/Debug/Preview Win Card")]
+    static void PreviewWin() => GameOverOverlay.ShowResult("LEVEL COMPLETE!", "YOU ESCAPED WITH THE ARTIFACTS", "Distance: 812m   |   Fragments: 2   |   $1,200", true);
+
+    [MenuItem("Tools/Debug/Hide Result Card")]
+    static void HideCard() => GameOverOverlay.Hide();
 }

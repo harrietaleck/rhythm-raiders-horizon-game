@@ -179,6 +179,28 @@ public class ClubRun : MonoBehaviour
     // lanes and clear of the side DJ booths. Thin in the Lobby, packed on the Main Dance Floor.
     readonly List<Vector3> _crowdBlocked = new List<Vector3>();   // x = side, y = zMin, z = zMax
     float _crowdZ = -1000f;
+    float _crowdLightZ = -1000f;
+    int _crowdLightIndex;
+    static readonly Color[] CrowdLightColors =
+    {
+        new Color(1f, 0.35f, 0.85f), new Color(0.3f, 0.85f, 1f), new Color(0.65f, 0.4f, 1f), new Color(1f, 0.7f, 0.35f),
+    };
+
+    /// <summary>Soft coloured wash over the dancers so they read in the dark club.</summary>
+    void CrowdLight(int side, float z, float edge)
+    {
+        var go = new GameObject("Crowd Light");
+        go.transform.SetParent(_course, false);
+        go.transform.position = new Vector3(side * (edge + 0.7f), 3.4f, z);
+        var l = go.AddComponent<Light>();
+        l.type = LightType.Point;
+        l.color = CrowdLightColors[_crowdLightIndex++ % CrowdLightColors.Length];
+        l.range = 7.5f;
+        l.intensity = 3.2f;
+        l.shadows = LightShadows.None;
+        l.renderMode = LightRenderMode.ForcePixel;
+        Track(go);
+    }
 
     void BlockCrowd(int side, float zMin, float zMax)
     {
@@ -224,6 +246,11 @@ public class ClubRun : MonoBehaviour
                     var t = DanceFloorCharacters.SpawnDancer(_course, new Vector3(x, 0f, z), facing, Random.Range(1.62f, 1.85f));
                     if (t == null) return;
                     Track(t.gameObject);
+                    if (z - _crowdLightZ > 7f)
+                    {
+                        CrowdLight(side, z, edge);
+                        _crowdLightZ = z;
+                    }
                 }
             }
             _crowdZ += gap;
@@ -462,6 +489,16 @@ public class ClubRun : MonoBehaviour
 
     public void AddNote() => AddNotes(1);
 
+    /// <summary>Bumped into a dancer: a few notes are knocked out of the runner's bag.</summary>
+    public void LoseNotes(int count, Transform player)
+    {
+        int lost = Mathf.Min(count, Notes);
+        Notes -= lost;
+        RunStats.Notes = Notes;
+        Flash(lost > 0 ? $"BUMPED A DANCER!  -{lost} NOTES" : "BUMPED A DANCER!", new Color(1f, 0.45f, 0.75f), 1.1f);
+        NoteFx.Spill(RunnerBackpack.Bag != null ? RunnerBackpack.Bag : player, lost);
+    }
+
     void AddNotes(int count)
     {
         Notes += count;
@@ -578,7 +615,7 @@ public class ClubRun : MonoBehaviour
         _popupPlate = Plate(_popupGroup, "PopupPlate", Vector2.zero, Vector2.one, skin != null ? skin.banner : null, 4f, Color.white);
         _popupText = Text(_popupGroup, "Popup", new Vector2(0.07f, 0.1f), new Vector2(0.93f, 0.9f), 28, Color.white, skin);
         _popupText.enableAutoSizing = true;
-        _popupText.fontSizeMin = 14f;
+        _popupText.fontSizeMin = 10f;
         _popupText.fontSizeMax = 28f;
         _popupText.textWrappingMode = TextWrappingModes.NoWrap;
         _popupText.text = "";
@@ -627,6 +664,12 @@ public class ClubRun : MonoBehaviour
         var tmp = go.AddComponent<TextMeshProUGUI>();
         if (skin != null && skin.font != null) tmp.font = skin.font;
         tmp.fontSize = size;
+        // Shrink to fit its box (never spill over the panel art), never wrap, never overflow.
+        tmp.enableAutoSizing = true;
+        tmp.fontSizeMin = Mathf.Min(10f, size);
+        tmp.fontSizeMax = size;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
+        tmp.overflowMode = TextOverflowModes.Ellipsis;
         tmp.color = color;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.characterSpacing = 4f;

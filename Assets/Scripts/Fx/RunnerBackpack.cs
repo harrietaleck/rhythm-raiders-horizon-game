@@ -11,6 +11,18 @@ public static class RunnerBackpack
     public static float BackPerTorso = 0.75f;    // how far behind the spine (same units)
     public static Vector3 Rotation = new Vector3(0f, 180f, 0f);  // bag front (straps) against the back
 
+    /// <summary>The runner's backpack in the current scene (notes fly into it).</summary>
+    public static Transform Bag;
+
+    /// <summary>Little squash on the bag when a note drops in.</summary>
+    public static void Pulse()
+    {
+        if (Bag == null) return;
+        var p = Bag.GetComponent<BagPulse>();
+        if (p == null) p = Bag.gameObject.AddComponent<BagPulse>();
+        p.Kick();
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Init()
     {
@@ -28,7 +40,7 @@ public static class RunnerBackpack
         var lib = FxLibrary.Get();
         if (lib == null || lib.backpack == null) return null;
         var existing = FindDeep(player.transform, "Runner Backpack");
-        if (existing != null) return existing;
+        if (existing != null) { Bag = existing; return existing; }
 
         var spine = FindBone(player.transform, "Spine2") ?? FindBone(player.transform, "Spine1") ?? FindBone(player.transform, "Spine");
         if (spine == null) return null;
@@ -65,6 +77,7 @@ public static class RunnerBackpack
             holder.position += body.rotation * new Vector3(0f, -0.12f * torso, -BackPerTorso * torso);
         }
         foreach (var r in rs) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        Bag = holder;
         return holder;
     }
 
@@ -79,5 +92,27 @@ public static class RunnerBackpack
     {
         foreach (var t in root.GetComponentsInChildren<Transform>(true)) if (t.name == name) return t;
         return null;
+    }
+}
+
+/// <summary>Quick squash-and-stretch on the backpack.</summary>
+public class BagPulse : MonoBehaviour
+{
+    Vector3 _base;
+    float _t = 1f;
+    bool _init;
+
+    public void Kick()
+    {
+        if (!_init) { _base = transform.localScale; _init = true; }
+        _t = 0f;
+    }
+
+    void LateUpdate()
+    {
+        if (!_init || _t >= 1f) return;
+        _t = Mathf.Min(1f, _t + Time.deltaTime / 0.18f);
+        float s = 1f + Mathf.Sin(_t * Mathf.PI) * 0.14f;
+        transform.localScale = _base * s;
     }
 }
