@@ -747,7 +747,7 @@ public class MuseumRun : MonoBehaviour
         _popupPlate = Plate(_popupGroup, "PopupPlate", Vector2.zero, Vector2.one, skin != null ? skin.banner : null, 4f, Color.white);
         _popupText = Text(_popupGroup, "Popup", new Vector2(0.07f, 0.1f), new Vector2(0.93f, 0.9f), 28, Color.white, skin);
         _popupText.enableAutoSizing = true;
-        _popupText.fontSizeMin = 14f;
+        _popupText.fontSizeMin = 10f;
         _popupText.fontSizeMax = 28f;
         _popupText.textWrappingMode = TextWrappingModes.NoWrap;
 
@@ -800,6 +800,12 @@ public class MuseumRun : MonoBehaviour
         var tmp = go.AddComponent<TextMeshProUGUI>();
         if (skin != null && skin.font != null) tmp.font = skin.font;
         tmp.fontSize = size;
+        // Shrink to fit its box (never spill over the panel art), never wrap, never overflow.
+        tmp.enableAutoSizing = true;
+        tmp.fontSizeMin = Mathf.Min(10f, size);
+        tmp.fontSizeMax = size;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
+        tmp.overflowMode = TextOverflowModes.Ellipsis;
         tmp.color = color;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.characterSpacing = 4f;

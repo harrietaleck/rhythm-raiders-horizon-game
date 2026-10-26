@@ -11779,6 +11779,7 @@ MonoBehaviour:
   levelText: {fileID: 189840882}
   hitText: {fileID: 1282741056}
   hudFontSize: 46
+  panelScale: 0.68
 --- !u!114 &1564157131
 MonoBehaviour:
   m_ObjectHideFlags: 0

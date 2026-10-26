@@ -125,6 +125,48 @@ public class HUDfunctions : MonoBehaviour
         }
         var bg = left.GetComponent<UnityEngine.UI.Image>();
         if (bg != null) { var c = bg.color; c.a = Mathf.Min(c.a, 0.8f); bg.color = c; }
+        FitRows(left.transform);
+    }
+
+    /// <summary>
+    /// Each stats row: icon at the left edge, its text filling the rest of the row inside the
+    /// panel's frame, auto-sized so a long value ("ARTIFACTS 0/2") never spills past the art.
+    /// </summary>
+    void FitRows(Transform panel)
+    {
+        foreach (Transform row in panel)
+        {
+            if (!row.name.EndsWith("Row")) continue;
+            var group = row.GetComponent<UnityEngine.UI.LayoutGroup>();
+            if (group != null) group.enabled = false;
+            foreach (Transform child in row)
+            {
+                var crt = child.GetComponent<RectTransform>();
+                if (crt == null) continue;
+                var tmp = child.GetComponent<TextMeshProUGUI>();
+                if (tmp != null)
+                {
+                    crt.anchorMin = new Vector2(0f, 0f);
+                    crt.anchorMax = new Vector2(1f, 1f);
+                    crt.pivot = new Vector2(0f, 0.5f);
+                    crt.offsetMin = new Vector2(52f, 3f);
+                    crt.offsetMax = new Vector2(-14f, -3f);
+                    tmp.enableAutoSizing = true;
+                    tmp.fontSizeMin = 12f;
+                    tmp.fontSizeMax = 38f;
+                    tmp.textWrappingMode = TextWrappingModes.NoWrap;
+                    tmp.overflowMode = TextOverflowModes.Ellipsis;
+                    tmp.alignment = TextAlignmentOptions.MidlineLeft;
+                }
+                else if (child.name == "Icon")
+                {
+                    crt.anchorMin = crt.anchorMax = new Vector2(0f, 0.5f);
+                    crt.pivot = new Vector2(0.5f, 0.5f);
+                    crt.sizeDelta = new Vector2(34f, 34f);
+                    crt.anchoredPosition = new Vector2(30f, 0f);
+                }
+            }
+        }
     }
 
     // ── Update ────────────────────────────────────────────────────────────────

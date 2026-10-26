@@ -534,7 +534,7 @@ public class RunDirector : MonoBehaviour
         foreach (var t in new[] { _warningText, _popupText })
         {
             t.enableAutoSizing = true;
-            t.fontSizeMin = 18f;
+            t.fontSizeMin = 10f;
             t.fontSizeMax = t.fontSize;
             t.textWrappingMode = TextWrappingModes.NoWrap;
         }
@@ -602,6 +602,12 @@ public class RunDirector : MonoBehaviour
         var tmp = go.AddComponent<TextMeshProUGUI>();
         if (font != null) tmp.font = font;
         tmp.fontSize = size;
+        // Shrink to fit its box (never spill over the panel art), never wrap, never overflow.
+        tmp.enableAutoSizing = true;
+        tmp.fontSizeMin = Mathf.Min(10f, size);
+        tmp.fontSizeMax = size;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
+        tmp.overflowMode = TextOverflowModes.Ellipsis;
         tmp.color = color;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.raycastTarget = false;

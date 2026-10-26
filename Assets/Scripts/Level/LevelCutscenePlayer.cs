@@ -114,8 +114,8 @@ public static class LevelCutscenePlayer
         {
             float k = t / 0.35f;
             var seam = new Color(0.55f, 0.95f, 1f, Mathf.Lerp(0.6f, 1f, k));
-            leftSeam.color = rightSeam.color = seam;
-            float jolt = Mathf.Sin(t * 90f) * 4f * (1f - k);
+            // (no seam flare: the doors simply unlock)
+            float jolt = 0f;   // no shake on unlock
             leftRt.anchoredPosition = new Vector2(-jolt, 0f);
             rightRt.anchorMin = new Vector2(0.5f, 0f);
             rightRt.anchoredPosition = new Vector2(jolt, 0f);
@@ -126,7 +126,7 @@ public static class LevelCutscenePlayer
         // Reveal the scene behind the doors and part them together.
         var blocker = root.transform.Find("Blocker");
         if (blocker != null) blocker.gameObject.SetActive(false);
-        var flash = CreatePanel(root.transform, "OpenFlash", new Vector2(0.4f, 0f), new Vector2(0.6f, 1f), new Color(0.6f, 0.95f, 1f, 0.55f));
+        var flash = CreatePanel(root.transform, "OpenFlash", new Vector2(0.4f, 0f), new Vector2(0.6f, 1f), Color.clear);
         var flashImg = flash.GetComponent<Image>();
 
         const float openTime = 0.75f;
@@ -141,7 +141,7 @@ public static class LevelCutscenePlayer
             var rt = flash.GetComponent<RectTransform>();
             rt.anchorMin = new Vector2(0.5f - 0.5f * ease, 0f);
             rt.anchorMax = new Vector2(0.5f + 0.5f * ease, 1f);
-            flashImg.color = new Color(0.6f, 0.95f, 1f, 0.55f * (1f - k));
+            flashImg.color = Color.clear;   // no coloured flash when the doors open
             yield return null;
         }
         Object.Destroy(flash);
@@ -455,8 +455,7 @@ public static class LevelCutscenePlayer
         for (float t = 0f; t < 0.35f; t += Time.unscaledDeltaTime)
         {
             float k = t / 0.35f;
-            seamImg.color = new Color(0.55f, 0.95f, 1f, Mathf.Lerp(0.6f, 1f, k));
-            float jolt = Mathf.Sin(t * 90f) * 3f * (1f - k);
+            float jolt = 0f;   // no shake on unlock
             leftJolt.anchoredPosition = new Vector2(-jolt, 0f);
             rightJolt.anchoredPosition = new Vector2(jolt, 0f);
             yield return null;
@@ -466,7 +465,7 @@ public static class LevelCutscenePlayer
         // Reveal the hall behind the doors with the same cyan open flash as Level 1.
         var blockerEarly = root.transform.Find("Blocker");
         if (blockerEarly != null) blockerEarly.gameObject.SetActive(false);
-        var flash = CreatePanel(stage.transform, "OpenFlash", new Vector2(0.5f, doorBottom), new Vector2(0.5f, doorTop), new Color(0.6f, 0.95f, 1f, 0.55f));
+        var flash = CreatePanel(stage.transform, "OpenFlash", new Vector2(0.5f, doorBottom), new Vector2(0.5f, doorTop), Color.clear);
         flash.transform.SetSiblingIndex(seam.transform.GetSiblingIndex());
         var flashRt = flash.GetComponent<RectTransform>();
         var flashImg = flash.GetComponent<Image>();
@@ -488,8 +487,7 @@ public static class LevelCutscenePlayer
             float half = (dr - dl) * 0.5f * k;
             flashRt.anchorMin = new Vector2(0.5f - half, doorBottom);
             flashRt.anchorMax = new Vector2(0.5f + half, doorTop);
-            flashImg.color = new Color(0.6f, 0.95f, 1f, 0.55f * (1f - k));
-            seamImg.color = new Color(0.55f, 0.95f, 1f, 1f - k);
+            flashImg.color = Color.clear;
             yield return null;
         }
 
@@ -647,7 +645,7 @@ public static class LevelCutscenePlayer
             float k = t / 0.35f;
             Thump(Time.unscaledTime - start);
             frameGlow.color = new Color(neon.r, neon.g, neon.b, Mathf.Lerp(0.5f, 0.9f, k));
-            leafRt.anchoredPosition = new Vector2(Mathf.Sin(t * 90f) * 3f * (1f - k), 0f);
+            leafRt.anchoredPosition = Vector2.zero;   // no shake on unlock
             yield return null;
         }
         leafRt.anchoredPosition = Vector2.zero;
@@ -655,7 +653,7 @@ public static class LevelCutscenePlayer
         // Open: reveal the live club behind the doorway with a magenta flash.
         var blocker = root.transform.Find("Blocker");
         if (blocker != null) blocker.gameObject.SetActive(false);
-        var flash = CreatePanel(stage.transform, "OpenFlash", new Vector2(dMax.x, dMin.y), new Vector2(dMax.x, dMax.y), new Color(1f, 0.4f, 0.9f, 0.6f));
+        var flash = CreatePanel(stage.transform, "OpenFlash", new Vector2(dMax.x, dMin.y), new Vector2(dMax.x, dMax.y), Color.clear);
         flash.transform.SetSiblingIndex(leaf.transform.GetSiblingIndex());
         var flashRt = flash.GetComponent<RectTransform>();
         var flashImg = flash.GetComponent<Image>();
@@ -668,7 +666,7 @@ public static class LevelCutscenePlayer
             leafImg.color = Color.Lerp(Color.white, new Color(0.35f, 0.25f, 0.4f, 1f), k);
             doorwayImg.color = new Color(0.03f, 0.01f, 0.04f, 1f - k);
             flashRt.anchorMin = new Vector2(Mathf.Lerp(dMax.x, dMin.x, k), dMin.y);
-            flashImg.color = new Color(1f, 0.4f, 0.9f, 0.6f * (1f - k));
+            flashImg.color = Color.clear;   // no coloured flash when the door opens
             yield return null;
         }
         Object.Destroy(flash);
