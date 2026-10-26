@@ -166,6 +166,20 @@ public static class MuseumProps
         var breakable = root.AddComponent<BreakableStatue>();
         breakable.pivot = pivot;
         breakable.stone = lion ? new Color(0.3f, 0.29f, 0.27f) : new Color(0.33f, 0.27f, 0.19f);   // dark stone lion, bronze Greek figure
+
+        // Gallery spotlight from above so the dark bronze / stone reads against the hall.
+        var spot = new GameObject("Statue Spotlight").AddComponent<Light>();
+        spot.transform.SetParent(t, false);
+        spot.transform.localPosition = new Vector3(0f, plinthH + height + 2.2f, -1.2f);
+        spot.transform.localRotation = Quaternion.Euler(70f, 0f, 0f);
+        spot.type = LightType.Spot;
+        spot.spotAngle = 60f;
+        spot.innerSpotAngle = 30f;
+        spot.range = plinthH + height + 5f;
+        spot.color = new Color(1f, 0.92f, 0.78f);
+        spot.intensity = lion ? 6f : 14f;
+        spot.shadows = LightShadows.None;
+        breakable.spot = spot;
         return go;
     }
 

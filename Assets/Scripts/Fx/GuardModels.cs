@@ -23,7 +23,12 @@ public static class GuardModels
     {
         // Prefer the imported DJ bodyguard character.
         var bg = DanceFloorCharacters.SpawnBodyguard(parent, feet, facing);
-        if (bg != null) { bg.name = name; return bg; }
+        if (bg != null)
+        {
+            bg.name = name;
+            if (name == "Bouncer") DanceFloorCharacters.AttachSidearm(bg);   // armed like the museum guards
+            return bg;
+        }
 
         var root = new GameObject(name).transform;
         root.SetParent(parent, true);

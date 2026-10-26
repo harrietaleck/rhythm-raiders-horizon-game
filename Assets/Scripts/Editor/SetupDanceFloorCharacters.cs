@@ -20,9 +20,9 @@ public static class SetupDanceFloorCharacters
         EditorApplication.delayCall += () =>
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-            if (AssetDatabase.LoadAssetAtPath<AnimationClip>(OutDir + "/BouncerIdle.anim") != null) return;
             if (!AssetDatabase.IsValidFolder(CharactersDir)) return;
-            Setup();
+            if (AssetDatabase.LoadAssetAtPath<AnimationClip>(OutDir + "/BouncerIdle.anim") == null) Setup();
+            if (!File.Exists(GuardAimCopy)) UseGuardAimIdle();
         };
     }
 
@@ -30,6 +30,50 @@ public static class SetupDanceFloorCharacters
     const string DancesDir = "Assets/Animations/dancefloorcharacterAnimations";
     const string OutDir = "Assets/Animations/DanceFloor";
     const string LibraryPath = "Assets/Resources/FxLibrary.asset";
+    const string GuardAimSource = "Assets/Animations/SecurityGuardAnimations/Standing Aim Idle 02 Looking.dae";
+    const string GuardAimCopy = OutDir + "/GuardAimIdle.dae";
+
+    /// <summary>
+    /// Bouncers and bodyguards stand in the same armed "aim idle" as the museum guards. The guards'
+    /// own file stays Generic for their rig, so a Humanoid copy is made to retarget onto the bodyguard.
+    /// </summary>
+    [MenuItem("Tools/Use Guard Aim Idle For Bouncers")]
+    public static void UseGuardAimIdle()
+    {
+        if (!File.Exists(GuardAimSource)) { Debug.LogWarning("[DanceFloor] guard aim idle not found"); return; }
+        if (!File.Exists(GuardAimCopy)) AssetDatabase.CopyAsset(GuardAimSource, GuardAimCopy);
+        var mi = AssetImporter.GetAtPath(GuardAimCopy) as ModelImporter;
+        if (mi == null) return;
+        mi.animationType = ModelImporterAnimationType.Human;
+        mi.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+        mi.materialImportMode = ModelImporterMaterialImportMode.None;
+        mi.importAnimation = true;
+        var clips = mi.clipAnimations;
+        if (clips == null || clips.Length == 0) clips = mi.defaultClipAnimations;
+        foreach (var c in clips)
+        {
+            c.loopTime = true;
+            c.lockRootRotation = true; c.keepOriginalOrientation = true;
+            c.lockRootHeightY = true; c.keepOriginalPositionY = true;
+            c.lockRootPositionXZ = true; c.keepOriginalPositionXZ = true;
+        }
+        mi.clipAnimations = clips;
+        mi.SaveAndReimport();
+
+        var avatar = AssetDatabase.LoadAllAssetsAtPath(GuardAimCopy).OfType<Avatar>().FirstOrDefault();
+        var clip = FirstClip(GuardAimCopy);
+        if (avatar == null || !avatar.isValid || !avatar.isHuman || clip == null)
+        {
+            Debug.LogWarning($"[DanceFloor] guard aim idle could not be made Humanoid (avatar={(avatar != null && avatar.isHuman)} clip={(clip != null)}); bouncers keep their idle");
+            return;
+        }
+        var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(OutDir + "/Bodyguard.controller");
+        if (ctrl == null) return;
+        foreach (var st in ctrl.layers[0].stateMachine.states) st.state.motion = clip;
+        EditorUtility.SetDirty(ctrl);
+        AssetDatabase.SaveAssets();
+        Debug.Log("[DanceFloor] bouncers now use the guard aim idle (" + clip.name + ", " + clip.length.ToString("0.0") + "s)");
+    }
 
     [MenuItem("Tools/Setup Dance Floor Characters")]
     public static void Setup()

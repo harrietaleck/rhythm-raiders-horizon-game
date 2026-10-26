@@ -243,8 +243,9 @@ public static class RooftopProps
     /// </summary>
     static void EdgeBars(Transform parent, float width, float z, float side)
     {
-        var steel = Mat(new Color(0.42f, 0.44f, 0.48f), 0f);
-        var dark = Mat(new Color(0.12f, 0.12f, 0.14f), 0f);
+        // Black bars: the end of the building reads as a dark drop, with the red line below them.
+        var steel = Mat(new Color(0.05f, 0.05f, 0.06f));
+        var dark = Mat(new Color(0.02f, 0.02f, 0.025f), 0f);
         float w = width - 0.4f;
         Part(PrimitiveType.Cube, parent, new Vector3(0f, 0.12f, z), new Vector3(w, 0.24f, 0.08f), dark, false);
         Part(PrimitiveType.Cube, parent, new Vector3(0f, 0.26f, z), new Vector3(w, 0.05f, 0.18f), steel, false);
@@ -274,24 +275,24 @@ public static class RooftopProps
         {
             Part(PrimitiveType.Cube, root.transform, new Vector3(0, -6f, 0), new Vector3(width, 12f, length), Mat(new Color(0.01f, 0.01f, 0.015f)), false);
 
-            // Black pit with a red danger glow rising out of it, and red lips on both edges.
-            var lip = Glow(new Color(1f, 0.1f, 0.06f, 0.95f));
-            glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.08f, nearEdge - 0.4f), new Vector3(width, 0.16f, 0.8f), lip, false).GetComponent<Renderer>());
-            glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.08f, -nearEdge + 0.4f), new Vector3(width, 0.16f, 0.8f), lip, false).GetComponent<Renderer>());
-            // Steel edge bars on both red lips so the end of each building reads clearly.
+            // Black pit with black edge lips; black bars on each lip with a thin red warning line
+            // running along the roof just under them.
+            var lip = Mat(new Color(0.03f, 0.03f, 0.035f));
+            Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.08f, nearEdge - 0.4f), new Vector3(width, 0.16f, 0.8f), lip, false);
+            Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.08f, -nearEdge + 0.4f), new Vector3(width, 0.16f, 0.8f), lip, false);
             EdgeBars(root.transform, width, nearEdge - 0.05f, -1f);
             EdgeBars(root.transform, width, -nearEdge + 0.05f, 1f);
-            var haze = Glow(new Color(1f, 0.04f, 0.02f, 0.45f));
-            glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, -0.4f, 0), new Vector3(width, 0.02f, length - 0.2f), haze, false).GetComponent<Renderer>());
-            glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.6f, nearEdge + 0.05f), new Vector3(width, 1.2f, 0.04f), Glow(new Color(1f, 0.06f, 0.03f, 0.22f)), false).GetComponent<Renderer>());
+            var redLine = Glow(new Color(1f, 0.08f, 0.05f, 1f));
+            foreach (float lz in new[] { nearEdge - 0.05f, -nearEdge + 0.05f })
+                glows.Add(Part(PrimitiveType.Cube, root.transform, new Vector3(0, 0.175f, lz), new Vector3(width - 0.2f, 0.05f, 0.3f), redLine, false).GetComponent<Renderer>());
 
             var pitLight = new GameObject("PitGlow").AddComponent<Light>();
             pitLight.transform.SetParent(root.transform, false);
             pitLight.transform.localPosition = new Vector3(0, -0.6f, 0);
             pitLight.type = LightType.Point;
             pitLight.color = new Color(1f, 0.08f, 0.05f);
-            pitLight.range = 8f;
-            pitLight.intensity = 4f;
+            pitLight.range = 6f;
+            pitLight.intensity = 1.2f;   // just a hint of red deep in the drop; the gap itself reads black
             warning.pitLight = pitLight;
 
             // Steel gantry over the near edge: two upright bar towers and a bar girder across the road.

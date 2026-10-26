@@ -9,6 +9,7 @@ public class BreakableStatue : MonoBehaviour
 {
     public Transform pivot;
     public Color stone = new Color(0.88f, 0.86f, 0.82f);
+    public Light spot;
     bool _down;
 
     // Sent by PickupBase when the runner hits this obstacle.
@@ -19,6 +20,7 @@ public class BreakableStatue : MonoBehaviour
         if (_down || pivot == null) return;
         _down = true;
         foreach (var c in GetComponents<Collider>()) c.enabled = false;
+        if (spot != null) spot.enabled = false;
         StartCoroutine(Fall());
     }
 
