@@ -285,9 +285,7 @@ public class GameManager : MonoBehaviour
         if (pickup != null)
             RunStats.SaveFrom(pickup);
 
-        string body = "GAME OVER\n\n" + RunStats.GetCauseHeadline() +
-                      "\n\n" + RunStats.FormatRunSummaryLine();
-        GameOverOverlay.Show(body);
+        GameOverOverlay.ShowResult("GAME OVER", RunStats.GetCauseHeadline(), RunStats.FormatRunSummaryLine(), victory: false);
         // PresentGameOverText() removed — GameOverOverlay is the sole display.
     }
 
@@ -352,13 +350,15 @@ public class GameManager : MonoBehaviour
         if (enemyBase      != null) enemyBase.enabled      = false;
 
         Time.timeScale = 1f;
-        yield return new WaitForSecondsRealtime(1.5f);
 
         // Save run stats so the VictoryScene scoreboard can display them.
         var pickup = playerMovement != null
             ? playerMovement.GetComponent<PickupBase>()
             : FindAnyObjectByType<PickupBase>();
         RunStats.SaveFrom(pickup);
+        // Win card in the GUI style: green with an orange banner.
+        GameOverOverlay.ShowResult("LEVEL COMPLETE!", "YOU ESCAPED WITH THE ARTIFACTS", RunStats.FormatRunSummaryLine(), victory: true);
+        yield return new WaitForSecondsRealtime(1.5f);
         PlayerRecords.RecordWin(ActiveLevel, pickup);
 
         // Record the completed level but do NOT advance yet.
@@ -368,6 +368,7 @@ public class GameManager : MonoBehaviour
         // Always go straight to the Game Center / scoreboard screen.
         // The Level2IntroScene / Level3IntroScene transitions are removed —
         // level selection happens from the scoreboard via the Next Level button.
+        GameOverOverlay.Hide();
         SceneFader.LoadScene(victorySceneName);
     }
 
