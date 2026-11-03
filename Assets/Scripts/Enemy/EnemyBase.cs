@@ -98,7 +98,26 @@ public class EnemyBase : MonoBehaviour
         //Move toward player
         transform.position = Vector3.MoveTowards(transform.position, targetPosition, chaseSpeed * Time.deltaTime);
         SnapToGround(false);
+
+        // Close enough to grab: the runner is caught (the trigger alone can miss a CharacterController).
+        if (!IsStunned && player != null)
+        {
+            float gap = player.position.z - transform.position.z;
+            float side = Mathf.Abs(player.position.x - transform.position.x);
+            bool down = playerMovement != null && playerMovement.IsStumbling;
+            // Close behind her, or near enough while she's on the floor after a fall: caught.
+            if (gap > -1.5f && side < catchSideReach && (gap < catchDistance || (down && gap < downCatchDistance)))
+                CatchPlayer();
+        }
     }
+
+    [Header("Catch")]
+    [Tooltip("Guard catches the runner when he gets this close behind her (metres along the run).")]
+    public float catchDistance = 1.8f;
+    [Tooltip("...and is within this distance sideways.")]
+    public float catchSideReach = 2.2f;
+    [Tooltip("While the runner is down after a trip, the guard grabs her from this far.")]
+    public float downCatchDistance = 5f;   // matches the HUD "CLOSE!" warning
 
     float GetChaseSpeed()
     {
