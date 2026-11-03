@@ -72,10 +72,12 @@ public class GuardBullet : MonoBehaviour
 
     void Hit()
     {
-        if (!_pickup.isSneaking && damage != null)
+        if (!_pickup.isSneaking && GameManager.GameStarted)
         {
-            _pickup.ApplyObstacleDamage(damage);
+            // Shot by a guard: the run is over.
             AudioManager.Instance?.PlayObstacleHitSfx();
+            ObstacleImpactFX.Explosion(_pickup.transform.position, 0.6f);
+            _pickup.KillPlayer(DeathCause.Shot);
         }
         Destroy(gameObject);
     }

@@ -6,7 +6,8 @@ public enum DeathCause
     Unknown,
     Guard,
     Obstacle,
-    Fall
+    Fall,
+    Shot
 }
 
 public static class RunStats
@@ -114,6 +115,7 @@ public static class RunStats
             DeathCause.Guard    => "You were caught by the guard!",
             DeathCause.Obstacle => $"You were stopped by {KillerPhrase()}!",
             DeathCause.Fall     => "You fell off the track!",
+            DeathCause.Shot     => "You were shot by a guard!",
             _                   => "Your run has ended."
         };
     }
