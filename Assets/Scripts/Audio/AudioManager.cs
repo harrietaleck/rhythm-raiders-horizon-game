@@ -293,24 +293,35 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    public void PlayVictory()
-    {
-        if (victorySound == null) return;
-        _musicSource.clip   = victorySound;
-        _musicSource.volume = musicVolume;
-        _musicSource.loop   = false;
-        _musicSource.Play();
+    static AudioClip _resultMusic;
+    static bool _resultLooked;
 
+    /// <summary>"Dead Network" (Infraction) — the music for both the game over and the win screens.</summary>
+    AudioClip ResultMusic(AudioClip fallback)
+    {
+        if (!_resultLooked) { _resultLooked = true; _resultMusic = Resources.Load<AudioClip>("Audio/ResultMusic"); }
+        return _resultMusic != null ? _resultMusic : fallback;
     }
 
-    public void PlayGameOver()
+    /// <summary>
+    /// Starts the result music the moment the game over / win card appears, and keeps it going
+    /// into the Death / Victory screen without restarting.
+    /// </summary>
+    public void PlayResultMusic(bool victory)
     {
-        if (gameOverSound == null) return;
-        _musicSource.clip   = gameOverSound;
+        var clip = ResultMusic(victory ? victorySound : gameOverSound);
+        if (clip == null || _musicSource == null) return;
+        if (_musicLayerSource != null) _musicLayerSource.Stop();
+        if (_musicSource.clip == clip && _musicSource.isPlaying) return;
+        _musicSource.clip   = clip;
         _musicSource.volume = musicVolume;
-        _musicSource.loop   = false;
+        _musicSource.loop   = true;
         _musicSource.Play();
     }
+
+    public void PlayVictory() => PlayResultMusic(true);
+
+    public void PlayGameOver() => PlayResultMusic(false);
 
     public void PlayNarrative()
     {

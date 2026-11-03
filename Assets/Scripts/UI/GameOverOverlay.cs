@@ -332,6 +332,7 @@ public class GameOverOverlay : MonoBehaviour
         }
 
         o._root.SetActive(true);
+        AudioManager.Instance?.PlayResultMusic(victory);
         o._shownAt = Time.unscaledTime;
         o._group.alpha = 0f;
         o._card.localScale = Vector3.one * 0.86f;
