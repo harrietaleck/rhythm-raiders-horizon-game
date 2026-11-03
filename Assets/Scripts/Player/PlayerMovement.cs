@@ -106,11 +106,14 @@ public class PlayerMovement : MonoBehaviour
             move.z += _stumbleVelZ;
         }
 
-        if (!_stumbleSteer && Input.GetButtonDown("Jump") && canJump && isGrounded)
+        // Jump buffer: a press just before landing still counts.
+        if (Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) _jumpPressedAt = Time.time;
+        if (!_stumbleSteer && Time.time - _jumpPressedAt < 0.15f && canJump && isGrounded)
         {
             velocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
             canJump = false;
             DidJumpThisFrame = true;
+            _jumpPressedAt = -10f;
         }
 
         velocity += gravity * Time.deltaTime;
@@ -125,10 +128,56 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!enabled || !GameManager.GameStarted || hit.collider == null) return;
         if (ReactToCharacter(hit.collider)) return;
+        // Floor, walls and props are just solid: only real obstacles can be jumped through.
+        // (Letting the floor through made her sink and bob up and down the whole run.)
+        var obstacle = hit.collider.GetComponentInParent<HealthDecreaseObstacle>();
+        if (obstacle == null || IsGround(hit.collider))
+        {
+            _pickup?.HandleSolidContact(hit.collider);
+            return;
+        }
+        if (ClearsByJumping(hit.collider) || NotABump(hit))
+        {
+            // Grazed the top while jumping over: no trip, slide straight over it.
+            PassThrough(obstacle.gameObject);
+            return;
+        }
         _pickup?.HandleSolidContact(hit.collider);
     }
 
     readonly RaycastHit[] _probeHits = new RaycastHit[12];
+    float _jumpPressedAt = -10f;
+
+    /// <summary>
+    /// A low obstacle touched anywhere but its front face isn't a bump: landing on its top or
+    /// catching its back edge on the way down after a jump must not trip her.
+    /// </summary>
+    bool NotABump(ControllerColliderHit hit)
+    {
+        var col = hit.collider;
+        if (col.bounds.max.y - FeetY > 1.3f) return false;      // tall: every contact counts
+        if (hit.normal.y > 0.5f) return true;                     // on top of it
+        if (transform.position.z > col.bounds.center.z) return true;   // already past it
+        return hit.normal.z > -0.3f;                              // not the face toward her
+    }
+
+    /// <summary>Height of the runner's soles in world space.</summary>
+    float FeetY => controller != null ? transform.TransformPoint(controller.center).y - controller.height * 0.5f : transform.position.y;
+
+    /// <summary>
+    /// Low obstacles (lasers, fences) that the runner can jump: they only count when her body
+    /// actually meets them. While she's in the air with her feet near or above the top, she clears it.
+    /// </summary>
+    public bool ClearsLowObstacle(Collider col) => ClearsByJumping(col);
+
+    bool ClearsByJumping(Collider col)
+    {
+        float top = col.bounds.max.y;
+        bool low = top - FeetY < 1.3f;   // jumpable
+        if (!low) return false;
+        bool airborne = !isGrounded || velocity > 0.1f || DidJumpThisFrame;
+        return airborne && FeetY > top - 0.45f;
+    }
 
     /// <summary>
     /// Hits register the moment the runner's body meets an obstacle: a short sweep of the body
@@ -154,6 +203,9 @@ public class PlayerMovement : MonoBehaviour
             if (col == null || col.transform.IsChildOf(transform)) continue;
             if (ReactToCharacter(col)) continue;
             if (col.GetComponentInParent<HealthDecreaseObstacle>() == null) continue;
+            // Low, jumpable obstacles aren't hit early by the look-ahead: the runner still has
+            // time to press jump. They count on real contact (OnControllerColliderHit).
+            if (col.bounds.max.y - FeetY < 1.3f) continue;
             if (col.isTrigger) _pickup.HandleTrigger(col);
             else _pickup.HandleSolidContact(col);
         }
@@ -230,8 +282,14 @@ public class PlayerMovement : MonoBehaviour
         var cols = obstacle != null ? obstacle.GetComponentsInChildren<Collider>() : new Collider[0];
         if (controller == null) return cols;
         foreach (var c in cols)
-            if (c != null && !c.isTrigger) Physics.IgnoreCollision(controller, c, true);
+            if (c != null && !c.isTrigger && !IsGround(c)) Physics.IgnoreCollision(controller, c, true);
         return cols;
+    }
+
+    bool IsGround(Collider c)
+    {
+        int mask = (Ground.value != 0 ? Ground.value : groundMask.value) | GroundPlacementUtility.DefaultGroundMask.value;
+        return (mask & (1 << c.gameObject.layer)) != 0;
     }
 
     System.Collections.IEnumerator StumbleRoutine(Bounds b, bool haveBounds)

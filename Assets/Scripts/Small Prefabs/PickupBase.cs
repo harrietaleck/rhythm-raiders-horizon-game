@@ -135,7 +135,10 @@ public class PickupBase : MonoBehaviour
             HealthIncrease();
             DestroyPickupRoot(other);
         }
-        if (HasTag(other, "HealthDEC"))
+        // Solid obstacles are hit by the body itself (PlayerMovement), not by this wider
+        // pickup trigger - it reaches past the body and tripped her before she could jump.
+        if (HasTag(other, "HealthDEC") && other.isTrigger
+            && (playerMovement == null || !playerMovement.ClearsLowObstacle(other)))
             HitObstacle(other);
         // Guard catch is handled exclusively by EnemyBase.CatchPlayer() to avoid double-trigger.
         if (HasTag(other, "Artifact"))
