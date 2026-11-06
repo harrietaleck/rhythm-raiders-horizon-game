@@ -286,6 +286,9 @@ public class GameOverOverlay : MonoBehaviour
         TmpUiUtility.SetSafeText(o._kicker, victory ? "MISSION SUCCESS" : "RUN ENDED");
         TmpUiUtility.SetSafeText(o._title, (title ?? "").ToUpperInvariant());
         TmpUiUtility.SetSafeText(o._body, (body ?? "").ToUpperInvariant());
+        // Text Animator: the headline waves on a win and shakes on a loss; the kicker pulses.
+        TextFx.Use(o._title, victory ? "wave" : "shake");
+        TextFx.Use(o._kicker, "pulse");
 
         o._vignette.color = new Color(th.glow.r * 0.5f, th.glow.g * 0.5f, th.glow.b * 0.5f, 0.6f);
         o._glow.color = th.glow;

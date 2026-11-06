@@ -39,7 +39,10 @@ public class LevelIntroScreenHUD : MonoBehaviour
             gameplaySceneName = _def.gameplayScene;
 
         if (titleText != null)
+        {
             titleText.text = _def.briefingTitle;
+            TextFx.Use(titleText, "wave");
+        }
         if (subtitleText != null)
             subtitleText.text = _def.codename;
 

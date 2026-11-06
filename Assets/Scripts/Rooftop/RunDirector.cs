@@ -622,6 +622,8 @@ public class RunDirector : MonoBehaviour
         if (_popupText == null) return;
         _popupText.text = text;
         _popupText.color = color;
+        TextFx.Use(_popupText, "wave");
+        TextFx.Use(_warningText, "shake");
         _popupUntil = Time.time + seconds;
         _popupShownAt = Time.time;
     }

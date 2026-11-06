@@ -714,6 +714,7 @@ public class MuseumRun : MonoBehaviour
         if (_popupText == null) return;
         _popupText.text = text;
         _popupText.color = color;
+        TextFx.Use(_popupText, "wave");
         _popupUntil = Time.time + seconds;
         _popupShownAt = Time.time;
     }

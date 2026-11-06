@@ -216,6 +216,7 @@ public class HUDfunctions : MonoBehaviour
                                     : dist < 10f  ? new Color(1f, 0.6f, 0f)
                                     : new Color(1f, 0.4f, 0.4f);
                 TmpUiUtility.SetSafeText(guardDistText, $"GUARD {dist:F0}m{danger}");
+                TextFx.Use(guardDistText, surging || dist < 5f ? "shake" : null);   // only when he's on her
             }
             else
             {
