@@ -84,7 +84,10 @@ public class Spawner : MonoBehaviour
             col.enabled = true;
 
         GameplayCollisionUtility.ConfigureObject(clone);
+        if (PickupLimiter.Reject(clone)) { PickupLimiter.Drop(clone); return; }   // too many, or on top of another
+        if (PickupVisuals.TryMakeShield(clone)) return;   // some power-ups become plasma shield orbs
         PickupVisuals.Dress(clone);   // power-ups wear their Stylized Fire flame
+        PickupLimiter.Register(clone);
     }
 
     static void GetSpawnRange(GameObject ground, Bounds footprint, out float minX, out float maxX, out float minZ, out float maxZ)

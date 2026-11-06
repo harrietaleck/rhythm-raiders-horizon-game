@@ -25,6 +25,7 @@ public class SlowDownObstacle : MonoBehaviour
 
         if (col != null) col.enabled = false;
         foreach (var r in GetComponentsInChildren<Renderer>()) r.enabled = false;   // model and its flame
+        foreach (var l in GetComponentsInChildren<Light>()) l.enabled = false;
 
         StartCoroutine(ApplySlow(movement));
     }

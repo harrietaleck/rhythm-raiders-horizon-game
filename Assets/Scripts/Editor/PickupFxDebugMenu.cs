@@ -26,8 +26,32 @@ public static class PickupFxDebugMenu
             foreach (var col in c.GetComponentsInChildren<Collider>()) col.enabled = false;
             x += 2f;
         }
+        foreach (var goal in Resources.FindObjectsOfTypeAll<ArtifactGoal>())
+        {
+            if (!goal.gameObject.scene.IsValid()) continue;
+            var a = Object.Instantiate(goal.gameObject, new Vector3(2.5f, p.y - 1f, p.z + 9f), goal.transform.rotation);
+            a.name = "Preview Artifact";
+            Spawner.PrepareSpawnedClone(a);
+            foreach (var col in a.GetComponentsInChildren<Collider>()) col.enabled = false;
+            break;
+        }
         var bubble = RooftopProps.Power(null, new Vector3(0f, p.y + 1.5f, p.z + 6f), PowerPickup.Kind.Bubble);
         foreach (var col in bubble.GetComponentsInChildren<Collider>()) col.enabled = false;
         Debug.Log("[PowerUps] lined up ahead of the runner");
+    }
+}
+
+public static class GuardGunDebugMenu
+{
+    [MenuItem("Tools/Debug/Drop Armed Bouncer Ahead")]
+    static void Bouncer()
+    {
+        if (!Application.isPlaying) return;
+        var player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null) return;
+        var p = player.transform.position;
+        var cc = player.GetComponent<CharacterController>();
+        float feet = p.y - (cc != null ? cc.height * 0.5f : 1f);
+        GuardModels.Spawn(null, new Vector3(-2.5f, feet, p.z + 11f), Vector3.back, "Bouncer");
     }
 }
