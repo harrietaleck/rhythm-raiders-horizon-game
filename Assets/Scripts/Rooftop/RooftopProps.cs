@@ -524,6 +524,17 @@ public static class RooftopProps
                 Part(PrimitiveType.Cube, visual.transform, new Vector3(0.3f, -0.45f, 0), new Vector3(0.23f, 0.15f, 0.23f), Mat(Color.white, 1f), false);
                 break;
             case PowerPickup.Kind.Bubble:
+                var plasma = FxLibrary.Get() != null ? FxLibrary.Get().plasmaShield : null;
+                if (plasma != null)
+                {
+                    // Plasma Shader sphere (prefab is ~3.8 m across): a 1 m glowing shield orb.
+                    var orb = Object.Instantiate(plasma, visual.transform);
+                    orb.name = "PlasmaShield";
+                    orb.transform.localPosition = Vector3.zero;
+                    orb.transform.localScale = orb.transform.localScale * (1f / 3.85f);
+                    foreach (var c in orb.GetComponentsInChildren<Collider>()) Object.Destroy(c);
+                    break;
+                }
                 Part(PrimitiveType.Sphere, visual.transform, Vector3.zero, Vector3.one * 0.9f, Mat(new Color(0.35f, 0.85f, 1f, 0.55f), 2f, true), false);
                 Part(PrimitiveType.Sphere, visual.transform, Vector3.zero, Vector3.one * 0.4f, Mat(new Color(0.8f, 0.97f, 1f), 3f), false);
                 break;
