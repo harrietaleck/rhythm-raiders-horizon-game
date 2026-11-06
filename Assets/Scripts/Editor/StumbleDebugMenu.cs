@@ -210,3 +210,28 @@ public static class DJStationDebugMenu
     }
 }
 
+
+/// <summary>Drops a low laser / laser fence ahead and jumps at a fair moment, to test that a jump clears it.</summary>
+public static class LaserJumpTest
+{
+    [MenuItem("Tools/Debug/Test Jump Over Low Laser")]
+    static void Low() => Run(false);
+
+    [MenuItem("Tools/Debug/Test Jump Over Laser Fence")]
+    static void Fence() => Run(true);
+
+    static void Run(bool fence)
+    {
+        if (!Application.isPlaying) return;
+        var pm = Object.FindAnyObjectByType<PlayerMovement>();
+        if (pm == null) return;
+        var cc = pm.GetComponent<CharacterController>();
+        float feet = pm.transform.position.y - (cc.height * 0.5f - cc.center.y);
+        var p = new Vector3(pm.transform.position.x, feet, pm.transform.position.z + Mathf.Max(10f, pm.forwardSpeed * 1.4f));
+        var go = fence ? ClubProps.LaserFence(null, p) : MuseumProps.LowLaser(null, p);
+        var t = new GameObject("JumpTester").AddComponent<JumpTester>();
+        t.player = pm;
+        t.target = go.transform;
+        Debug.Log($"[LaserJumpTest] {go.name} at z={p.z:F1}, runner z={pm.transform.position.z:F1} speed={pm.forwardSpeed * pm.Momentum:F1}");
+    }
+}

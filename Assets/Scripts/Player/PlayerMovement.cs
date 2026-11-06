@@ -9,6 +9,8 @@ public class PlayerMovement : MonoBehaviour
     public float baseSidewaySpeed = 10f;
     public float sidewaySpeed = 10f;
     public float forwardSpeed = 8f;
+    [Tooltip("Run momentum from the shield (1 = full pace). Set by PickupBase as the shield drains or refills.")]
+    public float Momentum = 1f;
     public float gravity = -20f;     // stronger gravity = snappier, less floaty jumps
     public float jumpHeight = 3f;
     public float footGroundOffset = 0.08f;
@@ -99,7 +101,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         float horizontal = _stumbleSteer ? 0f : Input.GetAxis("Horizontal");
-        Vector3 move = new Vector3(horizontal * sidewaySpeed, 0, forwardSpeed * _stumbleSpeedMul);
+        Vector3 move = new Vector3(horizontal * sidewaySpeed, 0, forwardSpeed * _stumbleSpeedMul * Momentum);
         if (_stumbleSteer)
         {
             move.x = _stumbleVelX;
@@ -142,11 +144,18 @@ public class PlayerMovement : MonoBehaviour
             PassThrough(obstacle.gameObject);
             return;
         }
+        if (LogBumps)
+            Debug.Log($"[Bump] {obstacle.name} feet={FeetY:F2} top={hit.collider.bounds.max.y:F2} n={hit.normal} grounded={isGrounded} vel={velocity:F2} stumbling={IsStumbling} z={transform.position.z:F2} colZ={hit.collider.bounds.center.z:F2}");
         _pickup?.HandleSolidContact(hit.collider);
     }
 
+    public static bool LogBumps = false;
+
     readonly RaycastHit[] _probeHits = new RaycastHit[12];
     float _jumpPressedAt = -10f;
+
+    /// <summary>Same as pressing jump (used by test tools).</summary>
+    public void RequestJump() => _jumpPressedAt = Time.time;
 
     /// <summary>
     /// A low obstacle touched anywhere but its front face isn't a bump: landing on its top or
@@ -416,10 +425,13 @@ public class PlayerMovement : MonoBehaviour
             return;
 
         float footY = hit.point.y + (controller != null
-            ? controller.height * 0.5f + controller.center.y + footGroundOffset
+            ? controller.height * 0.5f - controller.center.y + footGroundOffset
             : 1f);
 
-        if (transform.position.y > footY + 0.35f)
+        // Only rescue her when she has sunk into the floor while coming down. (It used to snap her
+        // back whenever she was within 35 cm above the floor - which cancelled most jumps a few
+        // frames after take-off, so she ran straight into lasers she had jumped for.)
+        if (velocity > 0f || DidJumpThisFrame || transform.position.y > footY - 0.02f)
             return;
 
         controller.enabled = false;
