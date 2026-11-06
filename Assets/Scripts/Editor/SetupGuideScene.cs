@@ -79,19 +79,19 @@ public static class SetupGuideScene
     static string G(string t) => "<color=#FFD65A>" + t + "</color>";
 
     /// <summary>
-    /// Paged How To Play: BASICS / SCREEN / LEVELS / POINTS &amp; SHOP tabs (also ← → keys).
+    /// Paged How To Play: BASICS / PICKUPS / SCREEN / LEVELS / POINTS &amp; SHOP tabs (also ← → keys).
     /// </summary>
     static GameObject BuildGuide(GameObject canvas, out Button creditsBtn, out Button menuBtn)
     {
         var window = Window(canvas, "GuidePanel", new Vector2(0.08f, 0.04f), new Vector2(0.92f, 0.96f), "HOW TO PLAY");
 
-        string[] tabNames = { "BASICS", "SCREEN", "LEVELS", "POINTS & SHOP" };
+        string[] tabNames = { "BASICS", "PICKUPS", "SCREEN", "LEVELS", "POINTS & SHOP" };
         _tabs = new Button[tabNames.Length];
         _pages = new GameObject[tabNames.Length];
         for (int i = 0; i < tabNames.Length; i++)
         {
-            float x0 = 0.06f + i * 0.225f;
-            _tabs[i] = MakeButton(window, "Tab" + i, tabNames[i], new Vector2(x0, 0.735f), new Vector2(x0 + 0.205f, 0.815f));
+            float x0 = 0.04f + i * 0.186f;
+            _tabs[i] = MakeButton(window, "Tab" + i, tabNames[i], new Vector2(x0, 0.735f), new Vector2(x0 + 0.176f, 0.815f));
             _pages[i] = Panel(window, "Page" + i, new Vector2(0.06f, 0.17f), new Vector2(0.94f, 0.72f));
         }
 
@@ -103,19 +103,39 @@ public static class SetupGuideScene
         Block(p, "Controls", "CONTROLS",
             C("A / D") + " or " + C("ARROWS") + "  move between lanes\n" + C("SPACE") + "  jump\n" + C("ESC") + "  pause / settings", 0.52f, 1f, 0.66f, 1f);
         Block(p, "Hits", "BUMPING INTO THINGS",
-            "You " + W("trip, fall, get up and dash") + " on. Each bump costs " + C("1 shield") + " and some vibe, and the " +
-            "guard gains ground. Trip while he's right behind you and you're " + W("caught") + ".", 0f, 0.5f, 0.3f, 0.64f);
-        Block(p, "Lose", "SHIELD, VIBE & GAME OVER",
-            C("Shield") + " soaks up hits first. When it's gone, " + C("Vibe") + " drops. " +
-            W("Game over") + " when Vibe hits 0, the guard catches you, or you fall off a roof. The Game Over screen names what got you.", 0.52f, 1f, 0.3f, 0.64f);
+            "You " + W("trip, fall, get up and dash") + " on. Every bump costs " + C("1 shield") + " " + W("and Vibe") + ", and the " +
+            "guard gains ground. Get too close to him, or trip while he's right behind you, and you're " + W("caught") + ".", 0f, 0.5f, 0.3f, 0.64f);
+        Block(p, "Lose", "SHIELD = MOMENTUM",
+            C("Shield") + " is your running speed: it " + W("burns off as you run") + " and you slow down with it. Grab " +
+            C("plasma shield orbs") + " to speed back up. " + C("Vibe") + " is your health. " +
+            W("Game over") + " when Vibe hits 0, the guard catches you, a guard shoots you, or you fall off a roof.", 0.52f, 1f, 0.3f, 0.64f);
         Block(p, "Tips", "TIPS",
-            "Jump " + C("on the beat") + " for a speed boost.  Watch the " + C("GUARD") + " distance - when it says " + W("CLOSE!") + " don't take risks.  " +
-            "Notes lead you to the safe lane.", 0f, 1f, 0f, 0.28f);
+            "Press " + C("SPACE") + " just before a laser or fence - you sail over it.  Jump " + C("on the beat") + " for a speed boost.  " +
+            "Watch the " + C("GUARD") + " distance - when it says " + W("CLOSE!") + " don't take risks.  Notes lead you to the safe lane.", 0f, 1f, 0f, 0.28f);
+
+        // ── PICKUPS ──
+        p = _pages[1];
+        Block(p, "Shield", "SHIELD ORB",
+            "A glowing " + C("plasma orb") + ". " + C("+3 shield") + " - your momentum comes back and you speed up again.", 0f, 0.5f, 0.75f, 1f);
+        Block(p, "Vibe", "VIBE FLAME",
+            "A small " + C("rainbow flame") + " with a pink glow. " + C("+5 Vibe") + ". They turn up all along the path.", 0.52f, 1f, 0.75f, 1f);
+        Block(p, "Health", "HEALTH FLAME",
+            "Big " + C("green flame") + ". " + C("+20 Vibe") + ".", 0f, 0.5f, 0.5f, 0.73f);
+        Block(p, "Speed", "SPEED FLAME",
+            C("Orange flame") + ". Run faster for 5 seconds.", 0.52f, 1f, 0.5f, 0.73f);
+        Block(p, "Jump", "JUMP FLAME",
+            C("Electric white-blue flame") + ". Jump higher for 5 seconds.", 0f, 0.5f, 0.25f, 0.48f);
+        Block(p, "Sneak", "SNEAK FLAME",
+            C("Purple flame") + ". Obstacles can't hurt you for 5 seconds.", 0.52f, 1f, 0.25f, 0.48f);
+        Block(p, "Slow", "SLOW FLAME - AVOID",
+            W("Blue water flame") + " on the path. Touch it and you slow right down for a few seconds.", 0f, 0.5f, 0f, 0.23f);
+        Block(p, "Fragment", "BEAT FRAGMENT",
+            "A " + G("golden note") + " on a gold stand, with sparkles and little notes circling it. Grab " + G("2") + " to clear the level.", 0.52f, 1f, 0f, 0.23f);
 
         // ── SCREEN ──
-        p = _pages[1];
+        p = _pages[2];
         Block(p, "TopLeft", "TOP LEFT",
-            C("VIBE") + "  your health\n" + C("SHIELD") + "  hits you can still take (flashes red when low)\n" +
+            C("VIBE") + "  your health\n" + C("SHIELD") + "  your momentum - ticks down as you run (red when low = slow)\n" +
             C("ARTIFACTS") + "  Beat Fragments found (0/2)\n" + C("GUARD") + "  how far behind he is: NEAR, " + W("CLOSE!") + ", " + W("SURGE") + " when he sprints", 0f, 0.5f, 0.5f, 1f);
         Block(p, "TopMid", "TOP CENTRE",
             "Distance run, how far to the next fragment, notes, score and your combo. Each level adds its own line " +
@@ -127,7 +147,7 @@ public static class SetupGuideScene
             "Bottom right: your " + G("SOUND POINTS") + " (+ notes collected this run).", 0.52f, 1f, 0.06f, 0.48f);
 
         // ── LEVELS ──
-        p = _pages[2];
+        p = _pages[3];
         LevelBlock(p, 1, 0f, 0.32f,
             "Jump the " + W("roof gaps") + " (red edges and steel bars mark them) or ride a " + C("zip-line") + ". " +
             "Dodge AC units, water tanks and laundry lines. " + C("DJ stations") + " blast " + W("smoke") + " across the lanes. " +
@@ -142,7 +162,7 @@ public static class SetupGuideScene
             "DJ stages, bouncers and smoke on the dance floor.");
 
         // ── POINTS & SHOP ──
-        p = _pages[3];
+        p = _pages[4];
         Block(p, "Notes", "NOTES & SOUND POINTS",
             "Collect music " + C("notes") + " for score. When you finish a level they're banked as " + G("SOUND POINTS") + " for the Shop.", 0f, 0.5f, 0.55f, 1f);
         Block(p, "Stars", "STARS",
@@ -181,7 +201,7 @@ public static class SetupGuideScene
         var def = LevelCatalog.Get(level);
         string difficulty = level == 1 ? "EASY" : level == 2 ? "MEDIUM" : "HARD";
         Block(page, "Level" + level, "LEVEL " + level + "  <size=75%><color=#9FB8D1>" + def.displayName.ToUpper() + "  -  " + difficulty + "</color></size>",
-              howTo + "\n" + C(def.hitCount + " shield") + " hits before Vibe starts dropping.", xMin, xMax, 0f, 1f);
+              howTo + "\nStart with " + C(def.hitCount + " shield") + " - it burns off as you run, so keep grabbing shield orbs.", xMin, xMax, 0f, 1f);
     }
 
     static GameObject BuildCredits(GameObject canvas, out Button guideBtn, out Button menuBtn)
