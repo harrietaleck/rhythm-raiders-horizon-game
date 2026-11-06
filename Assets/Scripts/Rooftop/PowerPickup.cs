@@ -29,7 +29,9 @@ public class PowerPickup : MonoBehaviour
     {
         if (_taken || !GameManager.GameStarted || !PlayerColliderUtility.IsPlayer(other)) return;
         _taken = true;
-        RunDirector.Instance?.ApplyPower(kind, PlayerColliderUtility.GetPickup(other));
+        var pickup = PlayerColliderUtility.GetPickup(other);
+        if (kind == Kind.Bubble && pickup != null) pickup.AddShield();   // shield = run momentum
+        RunDirector.Instance?.ApplyPower(kind, pickup);
         AudioManager.Instance?.PlaySpeedPickupSfx();
         Destroy(gameObject);
     }

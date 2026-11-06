@@ -20,6 +20,17 @@ public class PickupBase : MonoBehaviour
     public bool isSneaking = false;
     public int hitCounter = 10;
 
+    [Header("Run momentum (shield)")]
+    [Tooltip("While running, one shield point burns off every this many seconds.")]
+    public float shieldDrainSeconds = 6f;
+    [Tooltip("Pace with no shield left, as a fraction of full speed.")]
+    public float minMomentum = 0.7f;
+    [Tooltip("Shield points a shield pickup gives back.")]
+    public int shieldPickupAmount = 3;
+    int _maxShield = 10;
+    float _drainTimer;
+    public int MaxShield => _maxShield;
+
     private bool _deathHandled;
     readonly Dictionary<int, float> _solidHitTimes = new Dictionary<int, float>();
     const float SolidHitCooldown = 0.45f;
@@ -45,10 +56,50 @@ public class PickupBase : MonoBehaviour
         playerMovement = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerMovement>();
         //Assign currnt health to max health
         currentHealth = maxHealth;
+        _maxShield = Mathf.Max(1, hitCounter);   // LevelBootstrap set the level's shield in Awake
+    }
+
+    /// <summary>
+    /// Shield is run momentum: it burns off while she runs and her pace drops with it;
+    /// shield pickups top it back up and she speeds up again.
+    /// </summary>
+    void UpdateMomentum()
+    {
+        if (playerMovement == null) return;
+        if (GameManager.GameStarted && !_deathHandled && playerMovement.enabled && hitCounter > 0)
+        {
+            _drainTimer += Time.deltaTime;
+            if (_drainTimer >= shieldDrainSeconds)
+            {
+                _drainTimer = 0f;
+                hitCounter--;
+            }
+        }
+        float target = Mathf.Lerp(minMomentum, 1f, Mathf.Clamp01(hitCounter / (float)_maxShield));
+        playerMovement.Momentum = Mathf.MoveTowards(playerMovement.Momentum, target, Time.deltaTime * 0.3f);
+    }
+
+    /// <summary>Small Vibe pickup: a little health back, up to full.</summary>
+    public void AddVibe(int amount)
+    {
+        currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+        AudioManager.Instance?.PlayHealthPickupSfx();
+        Debug.Log($"Vibe pickup: +{amount} vibe (now {currentHealth})");
+    }
+
+    /// <summary>Shield pickup: refills shield (and with it run momentum), up to the level's full shield.</summary>
+    public void AddShield(int amount = -1)
+    {
+        if (amount < 0) amount = shieldPickupAmount;
+        hitCounter = Mathf.Min(_maxShield, hitCounter + amount);
+        _drainTimer = 0f;
+        AudioManager.Instance?.PlaySpeedPickupSfx();
+        Debug.Log($"Shield pickup: +{amount} shield (now {hitCounter}), momentum up");
     }
     private void Update()
     {
-        
+        UpdateMomentum();
+
         //Each boost has its own independent timer so two active boosts don't interfere
         if (jumpBoostActive)
         {
@@ -296,32 +347,20 @@ public class PickupBase : MonoBehaviour
     }
 
     /// <summary>
-    /// Damage absorption: Shield (hitCounter) absorbs hits first.
-    /// Only when Shield reaches 0 does Vibe (currentHealth) take damage.
+    /// A hit always hurts: it knocks a shield point off (slowing her run) and takes Vibe (health).
+    /// While some shield is left it softens the Vibe loss to half; with none, Vibe takes it all.
     /// </summary>
     void ApplyDamage(int amount)
     {
+        int vibeLoss = amount;
         if (hitCounter > 0)
         {
             hitCounter = Mathf.Max(0, hitCounter - 1);
-            Debug.Log($"Shield absorbed hit — Shield remaining: {hitCounter}");
-            // Shield fully depleted this hit — spill leftover into Vibe
-            if (hitCounter == 0)
-            {
-                int spillover = amount - 1;   // 1 point consumed the last shield
-                if (spillover > 0)
-                {
-                    currentHealth = Mathf.Max(0, currentHealth - spillover);
-                    if (currentHealth <= 0) KillPlayer(DeathCause.Obstacle);
-                }
-            }
+            vibeLoss = Mathf.CeilToInt(amount * 0.5f);
+            Debug.Log($"Hit: -1 shield ({hitCounter} left), -{vibeLoss} vibe");
         }
-        else
-        {
-            // No shield left — Vibe takes full damage
-            currentHealth = Mathf.Max(0, currentHealth - amount);
-            if (currentHealth <= 0) KillPlayer(DeathCause.Obstacle);
-        }
+        currentHealth = Mathf.Max(0, currentHealth - vibeLoss);
+        if (currentHealth <= 0) KillPlayer(DeathCause.Obstacle);
     }
 
     public void ResetForNewRun()
