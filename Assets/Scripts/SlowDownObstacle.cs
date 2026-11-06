@@ -24,8 +24,7 @@ public class SlowDownObstacle : MonoBehaviour
         AudioManager.Instance?.PlaySlowDownObstacleSfx();
 
         if (col != null) col.enabled = false;
-        var mr = GetComponent<MeshRenderer>();
-        if (mr != null) mr.enabled = false;
+        foreach (var r in GetComponentsInChildren<Renderer>()) r.enabled = false;   // model and its flame
 
         StartCoroutine(ApplySlow(movement));
     }

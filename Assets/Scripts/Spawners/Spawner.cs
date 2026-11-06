@@ -84,6 +84,7 @@ public class Spawner : MonoBehaviour
             col.enabled = true;
 
         GameplayCollisionUtility.ConfigureObject(clone);
+        PickupVisuals.Dress(clone);   // power-ups wear their Stylized Fire flame
     }
 
     static void GetSpawnRange(GameObject ground, Bounds footprint, out float minX, out float maxX, out float minZ, out float maxZ)
