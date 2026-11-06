@@ -38,6 +38,21 @@ public class FxLibrary : ScriptableObject
     public AudioClip laserHitSound;
     public AudioClip drumHitSound;
 
+    [Header("Pickup flames (Stylized Fire, Vefects)")]
+    public GameObject flameSpeed;
+    public GameObject flameSlow;
+    public GameObject flameJump;
+    public GameObject flameSneak;
+    public GameObject flameHealth;
+    [Tooltip("World scale of a pickup flame.")]
+    public float pickupFlameScale = 1.6f;
+
+    [Header("Shield (Plasma Shader)")]
+    public GameObject plasmaShield;
+
+    [Header("UI text effects (Procedural Text Animator LITE)")]
+    public ProceduralUIEffects.Lite.EffectDatabase textEffects;
+
     static FxLibrary _instance;
     static bool _looked;
 

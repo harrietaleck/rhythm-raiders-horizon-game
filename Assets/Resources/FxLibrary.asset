@@ -55,3 +55,11 @@ MonoBehaviour:
   - {fileID: 4320982708228378309, guid: 47deaedfe3b081f44bb7ee422b93a3f1, type: 3}
   laserHitSound: {fileID: 8300000, guid: bc409f2f4ce3de14bbec9349b993b80d, type: 3}
   drumHitSound: {fileID: 8300000, guid: 40de273afee991b48bfdeeaa6dbdc855, type: 3}
+  flameSpeed: {fileID: 5627696518775099638, guid: af608092cc9c73341b43d16793a55de5, type: 3}
+  flameSlow: {fileID: 5627696518775099638, guid: a9e1548cc4b09fd4da53df877276badb, type: 3}
+  flameJump: {fileID: 5627696518775099638, guid: 4c6237d0bb163bd4a8435d88217a294b, type: 3}
+  flameSneak: {fileID: 5627696518775099638, guid: 9cce15443309a534294bb4f7bdb31981, type: 3}
+  flameHealth: {fileID: 5627696518775099638, guid: edc9c015d86b3dd40b811bb4ceb2e91d, type: 3}
+  pickupFlameScale: 1.6
+  plasmaShield: {fileID: 1957592409648599577, guid: 3ce62e84dab46f54a9c51523f8057ac0, type: 3}
+  textEffects: {fileID: 11400000, guid: 0a97180173ff42c44b15c72ff13ed943, type: 2}
