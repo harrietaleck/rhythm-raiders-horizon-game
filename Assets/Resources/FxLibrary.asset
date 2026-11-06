@@ -60,6 +60,12 @@ MonoBehaviour:
   flameJump: {fileID: 5627696518775099638, guid: 4c6237d0bb163bd4a8435d88217a294b, type: 3}
   flameSneak: {fileID: 5627696518775099638, guid: 9cce15443309a534294bb4f7bdb31981, type: 3}
   flameHealth: {fileID: 5627696518775099638, guid: edc9c015d86b3dd40b811bb4ceb2e91d, type: 3}
-  pickupFlameScale: 1.6
+  flameVibe: {fileID: 5627696518775099638, guid: e306f3cb39cad134f89a51301796ab94, type: 3}
+  guardGuns:
+  - {fileID: 4831969468043449689, guid: e705598fb7f525243a9aca3bc4f57898, type: 3}
+  - {fileID: 7286858483345856362, guid: c81501b4dad739b4a9538398b2495138, type: 3}
+  - {fileID: 7209185108777654096, guid: c214f39d559297a43a03f834d9dd4e0c, type: 3}
+  - {fileID: 3368331593303936535, guid: 7aac2d89d5917204584d58bd46604c2e, type: 3}
+  pickupFlameScale: 2
   plasmaShield: {fileID: 1957592409648599577, guid: 3ce62e84dab46f54a9c51523f8057ac0, type: 3}
   textEffects: {fileID: 11400000, guid: 0a97180173ff42c44b15c72ff13ed943, type: 2}

@@ -128,6 +128,15 @@ public class PatrolGuard : MonoBehaviour
             }
         }
 
+        // A rifle from the gun pack in the guard's hands (falls back to the simple sidearm).
+        var rifleMuzzle = GuardGuns.Attach(model != null ? model : transform, 0.85f, transform, new Vector3(0.25f, height * 0.62f, 0.35f));
+        if (rifleMuzzle != null)
+        {
+            _muzzle = rifleMuzzle;
+            BuildFlashAndLaser(rifleMuzzle.gameObject);
+            return;
+        }
+
         var gun = RooftopProps.Root("Sidearm", transform, transform.position).transform;
         gun.localPosition = new Vector3(0.28f, height * 0.68f, 0.5f);
         gun.localRotation = Quaternion.identity;
@@ -140,7 +149,11 @@ public class PatrolGuard : MonoBehaviour
         _muzzle = new GameObject("Muzzle").transform;
         _muzzle.SetParent(gun, false);
         _muzzle.localPosition = new Vector3(0f, 0f, 0.42f);
+        BuildFlashAndLaser(gun.gameObject);
+    }
 
+    void BuildFlashAndLaser(GameObject laserHost)
+    {
         _flash = new GameObject("MuzzleLight");
         _flash.transform.SetParent(_muzzle, false);
         var fl = _flash.AddComponent<Light>();
@@ -150,7 +163,7 @@ public class PatrolGuard : MonoBehaviour
         fl.intensity = 8f;
         _flash.SetActive(false);
 
-        _laser = gun.gameObject.AddComponent<LineRenderer>();
+        _laser = laserHost.AddComponent<LineRenderer>();
         _laser.positionCount = 2;
         _laser.startWidth = 0.07f;
         _laser.endWidth = 0.05f;

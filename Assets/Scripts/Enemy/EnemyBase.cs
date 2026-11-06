@@ -25,6 +25,7 @@ public class EnemyBase : MonoBehaviour
 
     void Start()
     {
+        GuardGuns.Attach(transform, 0.9f);   // the chasing guard carries a rifle
         //Assign scripts to be used in the enemy base script
         var playerGO = GameObject.FindGameObjectWithTag("Player");
         if (playerGO == null)

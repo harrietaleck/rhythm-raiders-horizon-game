@@ -22,14 +22,23 @@ public static class SetupNewFxPacks
         lib.flameJump = Load<GameObject>(Fire + "Electric/Particles/VFX_Stylized_Fire_01_Electric.prefab");
         lib.flameSneak = Load<GameObject>(Fire + "Mystic/Particles/VFX_Stylized_Fire_01_Mystic.prefab");
         lib.flameHealth = Load<GameObject>(Fire + "Poison/Particles/VFX_Stylized_Fire_01_Poison.prefab");
-        lib.pickupFlameScale = 1.6f;
+        lib.flameVibe = Load<GameObject>(Fire + "Rainbow/Particles/VFX_Stylized_Fire_01_Rainbow.prefab");
+        const string Guns = "Assets/Low Poly Stylized Gun Demo/Low Poly Stylized Gun/URP/Prefab/";
+        lib.guardGuns = new[]
+        {
+            Load<GameObject>(Guns + "Assult Rifel 1 .prefab"),
+            Load<GameObject>(Guns + "Assult Rifel 2 .prefab"),
+            Load<GameObject>(Guns + "Assult Rifel 3 .prefab"),
+            Load<GameObject>(Guns + "Assult Rifel 4 .prefab"),
+        };
+        lib.pickupFlameScale = 2f;
         lib.plasmaShield = Load<GameObject>("Assets/Houidisoft technology/Plasma Shader/Prefabs/Plasma Sphere (1).prefab");
         lib.textEffects = Load<ProceduralUIEffects.Lite.EffectDatabase>("Assets/Procedural Text Animator - LITE/Effect Assets/My Project Effects.asset");
 
         EditorUtility.SetDirty(lib);
         AssetDatabase.SaveAssets();
         Debug.Log($"[FxLibrary] flames speed={lib.flameSpeed != null} slow={lib.flameSlow != null} jump={lib.flameJump != null} " +
-                  $"sneak={lib.flameSneak != null} health={lib.flameHealth != null} plasma={lib.plasmaShield != null} text={lib.textEffects != null}");
+                  $"sneak={lib.flameSneak != null} health={lib.flameHealth != null} plasma={lib.plasmaShield != null} text={lib.textEffects != null} guns={lib.guardGuns?.Length}");
     }
 
     static T Load<T>(string path) where T : Object

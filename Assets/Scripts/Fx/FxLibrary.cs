@@ -44,8 +44,13 @@ public class FxLibrary : ScriptableObject
     public GameObject flameJump;
     public GameObject flameSneak;
     public GameObject flameHealth;
+    [Tooltip("Small +5 Vibe pickup flame.")]
+    public GameObject flameVibe;
+
+    [Header("Guard rifles (Low Poly Stylized Gun)")]
+    public GameObject[] guardGuns;
     [Tooltip("World scale of a pickup flame.")]
-    public float pickupFlameScale = 1.6f;
+    public float pickupFlameScale = 2f;
 
     [Header("Shield (Plasma Shader)")]
     public GameObject plasmaShield;

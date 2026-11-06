@@ -60,6 +60,7 @@ public static class DanceFloorCharacters
         var hand = anim != null && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightHand) : null;
         if (hand == null) return;
         float s = RunnerHeight() / 1.75f;
+        if (GuardGuns.Attach(character, 0.8f * s) != null) return;   // rifle from the gun pack
         var gun = new GameObject("Sidearm").transform;
         gun.position = hand.position + character.forward * 0.08f * s;
         gun.rotation = Quaternion.LookRotation(character.forward, Vector3.up);
